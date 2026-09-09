@@ -1,0 +1,35 @@
+# ==============================================================================
+# SideDoor AI - Git Ignore
+# ==============================================================================
+
+# Environment files & Secrets (CRITICAL: Never commit API keys)
+.env
+*.env
+.active_port
+
+# SQLite Databases & Local Cache
+*.db
+*.sqlite
+*.sqlite3
+netweave_cache.db
+sidedoor_cache.db
+
+# Python Artifacts & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+
+# Scratch scripts & Temporary files
+scratch/
+*.log
+
+# OS & Editor configurations
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

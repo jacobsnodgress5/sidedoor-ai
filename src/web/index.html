@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SideDoor AI — Autonomous Career Networking & Outreach</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tab-active {
+            border-bottom: 2px solid #16a34a;
+            color: #16a34a;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-lg flex items-center justify-center text-white shadow-sm font-bold text-xl">
+                    <i class="fa-solid fa-door-open"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">SideDoor AI</h1>
+                    <p class="text-xs text-slate-500 font-medium">Autonomous Career Networking & Outreach</p>
+                </div>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="flex items-center space-x-6 text-sm">
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500 font-medium">Companies:</span>
+                    <span id="stat-companies" class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">0</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500 font-medium">Pending Review:</span>
+                    <span id="stat-drafts" class="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-xs">0</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-500 font-medium">Sent:</span>
+                    <span id="stat-sent" class="font-bold text-brand-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs">0</span>
+                </div>
+                <!-- Profile Switcher Dropdown Container -->
+                <div class="relative inline-block text-left" id="profile-dropdown-container">
+                    <button onclick="toggleProfileDropdown()" id="btn-profile-dropdown" class="bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-md shadow-sm border border-slate-200 flex items-center space-x-2 transition" title="Select or manage profile">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                        <i class="fa-regular fa-user text-slate-400"></i>
+                        <span id="active-profile-label" class="max-w-[150px] truncate">Active Campaign</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                    </button>
+                    <!-- Dropdown Menu -->
+                    <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-64 rounded-xl shadow-xl bg-white ring-1 ring-black ring-opacity-5 divide-y divide-slate-100 focus:outline-none z-50 animate-in fade-in zoom-in duration-100">
+                        <div class="px-3 py-2 bg-slate-50 rounded-t-xl">
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Search Campaigns</p>
+                        </div>
+                        <div class="p-1.5 space-y-0.5 max-h-48 overflow-y-auto" id="profiles-list-container">
+                            <!-- Injected dynamically via JS: profile items -->
+                        </div>
+                        <div class="p-1.5 space-y-1 bg-slate-50 rounded-b-xl">
+                            <button onclick="createNewProfileClick()" class="w-full text-left px-2.5 py-1.5 text-xs text-brand-700 hover:bg-emerald-50 font-semibold rounded-lg flex items-center space-x-2 transition">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                                <span>Create New Profile / Track</span>
+                            </button>
+                            <button onclick="editCurrentProfileClick()" class="w-full text-left px-2.5 py-1.5 text-xs text-slate-600 hover:bg-slate-100 font-medium rounded-lg flex items-center space-x-2 transition">
+                                <i class="fa-solid fa-gear text-xs text-slate-400"></i>
+                                <span>Edit Current Profile</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="triggerAllocation()" id="run-btn" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-2 rounded-md shadow flex items-center space-x-1.5 transition">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Run Allocation</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8 text-sm">
+            <button onclick="switchTab('review')" id="tab-btn-review" class="py-3 px-1 tab-active flex items-center space-x-2">
+                <i class="fa-solid fa-inbox"></i>
+                <span>Daily Outreach Review</span>
+            </button>
+            <button onclick="switchTab('companies')" id="tab-btn-companies" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <i class="fa-solid fa-building"></i>
+                <span>Companies Explorer</span>
+            </button>
+            <button onclick="switchTab('contacts')" id="tab-btn-contacts" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <i class="fa-solid fa-users"></i>
+                <span>Contacts History</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+
+        <!-- Tab 1: Daily Outreach Review -->
+        <section id="tab-review" class="space-y-6">
+            <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Today's Outreach Pipeline</h2>
+                    <p class="text-xs text-slate-500">Review, edit, and copy or confirm drafted messages. Daily Cap: 15 messages.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <select id="filter-status" onchange="loadReviewCards()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 focus:ring-1 focus:ring-brand-500">
+                        <option value="DRAFTED">Show: Pending Review</option>
+                        <option value="ALL">Show: All Statuses</option>
+                        <option value="SENT">Show: Sent Only</option>
+                    </select>
+                    <button onclick="loadReviewCards()" class="p-1.5 text-slate-500 hover:text-slate-800 text-sm">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Cards Container -->
+            <div id="review-cards-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Dynamic cards loaded via JS -->
+            </div>
+            <div id="no-cards-msg" class="hidden text-center py-16 bg-white rounded-xl border border-slate-200">
+                <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                <h3 class="text-sm font-semibold text-slate-700">No Drafted Contacts Found</h3>
+                <p class="text-xs text-slate-400 mt-1">Run the job scraper or click 'Run Allocation' to populate today's batch.</p>
+            </div>
+        </section>
+
+        <!-- Tab 2: Companies Explorer -->
+        <section id="tab-companies" class="hidden space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h2 class="text-base font-bold text-slate-900">Target Companies Table</h2>
+                    <span class="text-xs text-slate-500">Auto-ingested from LinkedIn Job Scraper</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Domain</th>
+                                <th class="px-4 py-3">Company Name</th>
+                                <th class="px-4 py-3">Tier Priority</th>
+                                <th class="px-4 py-3">Tech Stack</th>
+                                <th class="px-4 py-3">Job Link</th>
+                                <th class="px-4 py-3">Added</th>
+                            </tr>
+                        </thead>
+                        <tbody id="companies-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab 3: Contacts Explorer -->
+        <section id="tab-contacts" class="hidden space-y-4">
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+                    <h2 class="text-base font-bold text-slate-900">Contacts & Outreach History</h2>
+                    <span class="text-xs text-slate-500">Comprehensive log across all channels</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-slate-600">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+                            <tr>
+                                <th class="px-4 py-3">Contact</th>
+                                <th class="px-4 py-3">Company</th>
+                                <th class="px-4 py-3">Classification</th>
+                                <th class="px-4 py-3">Channel / Email</th>
+                                <th class="px-4 py-3">Status</th>
+                                <th class="px-4 py-3">Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contacts-table-body" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Profile & Settings Onboarding Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden overflow-y-auto">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-3xl w-full max-h-[92vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in duration-200">
+            
+            <!-- Modal Header -->
+            <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex justify-between items-center shrink-0">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-lg bg-brand-500/20 border border-brand-500/40 flex items-center justify-center text-brand-400 font-bold">
+                        <i id="modal-header-icon" class="fa-solid fa-user-gear"></i>
+                    </div>
+                    <div>
+                        <h2 id="modal-title" class="text-base font-bold text-white leading-tight">Job Search Profile & Agent Settings</h2>
+                        <p id="modal-subtitle" class="text-xs text-slate-300 font-medium">Configure your personal background, search targets, and API keys.</p>
+                    </div>
+                </div>
+                <button onclick="closeProfileModal()" id="modal-close-btn" class="text-slate-400 hover:text-white p-1 rounded-md text-lg transition" title="Close modal">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- First-Launch Onboarding Banner (visible only if unconfigured) -->
+            <div id="onboarding-banner" class="bg-emerald-50 border-b border-emerald-100 px-6 py-3 text-xs text-emerald-800 flex items-start space-x-2.5 hidden shrink-0">
+                <i class="fa-solid fa-wand-magic-sparkles text-brand-600 mt-0.5 text-sm shrink-0"></i>
+                <div>
+                    <span class="font-bold">Welcome to SideDoor AI!</span> Complete your profile below to start finding target companies and generating hyper-personalized outreach. Your data and keys are stored <strong>100% locally</strong> in SQLite on your computer.
+                </div>
+            </div>
+
+            <!-- Modal Body (Scrollable) -->
+            <div class="p-6 overflow-y-auto space-y-6 text-sm">
+                
+                <!-- Quick-Fill AI Assistant Accordion -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div class="flex justify-between items-center cursor-pointer" onclick="toggleResumeAccordion()">
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded flex items-center">
+                                <i class="fa-solid fa-bolt mr-1 text-[11px]"></i> Quick Setup
+                            </span>
+                            <span class="font-semibold text-slate-800 text-xs">Have a Resume or LinkedIn 'About' section?</span>
+                        </div>
+                        <button type="button" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1">
+                            <span id="accordion-toggle-text">Auto-Fill with AI</span>
+                            <i id="accordion-toggle-icon" class="fa-solid fa-chevron-down text-[10px] ml-1"></i>
+                        </button>
+                    </div>
+                    <div id="resume-accordion-content" class="hidden mt-3 pt-3 border-t border-slate-200 space-y-2">
+                        <p class="text-xs text-slate-500">Paste your resume text or LinkedIn summary below. Gemini will extract your education, skills, and target background to auto-fill the form:</p>
+                        <textarea id="resume-raw-text" rows="4" placeholder="Paste resume text or LinkedIn summary here..." class="w-full text-xs font-mono p-2.5 bg-white border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none"></textarea>
+                        <div class="flex justify-end">
+                            <button type="button" onclick="parseResumeWithAI()" id="btn-parse-resume" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3 py-1.5 rounded-md shadow flex items-center space-x-1.5 transition">
+                                <i class="fa-solid fa-sparkles"></i>
+                                <span>Extract & Auto-Fill Form</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden Profile ID -->
+                <input type="hidden" id="prof-id" value="" />
+
+                <!-- Campaign / Profile Name -->
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-3.5 flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-lg bg-brand-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                        <i class="fa-solid fa-tag"></i>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-slate-800 mb-0.5">Search Campaign Name <span class="text-red-500">*</span></label>
+                        <input type="text" id="prof-campaign-name" placeholder="e.g. Data Science & ML (LA) or Backend Engineering Track" class="w-full text-xs font-semibold p-2 bg-white border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" required />
+                    </div>
+                </div>
+
+                <!-- Section 1: Personal Details -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                        <i class="fa-regular fa-id-card text-brand-600"></i>
+                        <span>1. Personal Information</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Full Name <span class="text-red-500">*</span></label>
+                            <input type="text" id="prof-full-name" placeholder="e.g. Alex Rivera" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" required />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+                            <input type="email" id="prof-email" placeholder="e.g. alex@gmail.com" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">LinkedIn Profile URL</label>
+                            <input type="text" id="prof-linkedin-url" placeholder="linkedin.com/in/yourprofile" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Education & Background -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-graduation-cap text-brand-600"></i>
+                        <span>2. Education & Background</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Alma Mater / University <span class="text-red-500">*</span></label>
+                            <input type="text" id="prof-alma-mater" placeholder="e.g. UCLA, UC Berkeley, NYU" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                            <p class="text-[10px] text-slate-400 mt-0.5">Used for alumni connection hooks.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Degree & Major</label>
+                            <input type="text" id="prof-degree-major" placeholder="e.g. B.S. in Computer Science" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Graduation Year</label>
+                            <input type="text" id="prof-grad-year" placeholder="e.g. 2026" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Professional Narrative / Bio (1-2 sentences)</label>
+                        <textarea id="prof-bio-summary" rows="2" placeholder="e.g. Software engineer with a background in distributed backend systems and database indexing." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- Section 3: Job Search Criteria & Skills -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-bullseye text-brand-600"></i>
+                        <span>3. Target Roles, Locations & Skills</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Target Job Titles (comma separated) <span class="text-red-500">*</span></label>
+                            <input type="text" id="prof-target-roles" placeholder="e.g. Data Scientist, Machine Learning Engineer" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                            <p class="text-[10px] text-slate-400 mt-0.5">Determines which hiring managers & peers Hunter targets.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Target Locations / Metros <span class="text-red-500">*</span></label>
+                            <input type="text" id="prof-target-locations" placeholder="e.g. Los Angeles, San Francisco, Remote" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                            <p class="text-[10px] text-slate-400 mt-0.5">Used by company scoring engine for priority tiers.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-700 mb-1">Key Technical Skills & Tools (comma separated)</label>
+                        <input type="text" id="prof-skills" placeholder="e.g. Python, SQL, PyTorch, Scikit-learn, PostgreSQL, Git, C++" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+                        <p class="text-[10px] text-slate-400 mt-0.5">Used to match job descriptions and find shared technical overlap with prospects.</p>
+                    </div>
+                </div>
+
+                <!-- Section 4: Voice & Style Calibration -->
+                <div>
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-pen-nib text-brand-600"></i>
+                        <span>4. Voice & Tone Calibration</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-3">Paste 1-2 examples of messages you've previously sent. The AI copywriter mimics your rhythm, length, and authentic sign-off.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Hiring Manager / Recruiter Outreach Sample</label>
+                            <textarea id="prof-sample-hm" rows="4" placeholder="Paste a cold message you've sent to a team lead or hiring manager..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none font-sans"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-700 mb-1">Peer / Alumni Outreach Sample</label>
+                            <textarea id="prof-sample-yp" rows="4" placeholder="Paste a casual networking note you've sent to a peer or alumni..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none font-sans"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5: API Keys -->
+                <div class="bg-amber-50/50 border border-amber-200 rounded-xl p-4">
+                    <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider mb-1 flex items-center space-x-1.5">
+                        <i class="fa-solid fa-key text-amber-600"></i>
+                        <span>5. Local API Keys</span>
+                    </h3>
+                    <p class="text-xs text-slate-500 mb-3">Keys are kept strictly on your local computer. Leave blank if already configured in your <code class="bg-slate-100 px-1 py-0.5 rounded text-[11px]">.env</code> file.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-medium text-slate-700">Gemini API Key</label>
+                                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-blue-600 hover:underline">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                            </div>
+                            <input type="password" id="prof-gemini-key" placeholder="Enter new key to update..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white" />
+                            <p id="gemini-key-status" class="text-[10px] text-slate-400 mt-0.5"></p>
+                        </div>
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="text-xs font-medium text-slate-700">Hunter.io API Key</label>
+                                <a href="https://hunter.io/users/sign_up" target="_blank" class="text-[11px] text-blue-600 hover:underline">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                            </div>
+                            <input type="password" id="prof-hunter-key" placeholder="Enter new key to update..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white" />
+                            <p id="hunter-key-status" class="text-[10px] text-slate-400 mt-0.5"></p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center shrink-0">
+                <div class="flex items-center space-x-2">
+                    <button type="button" onclick="closeProfileModal()" id="btn-cancel-modal" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="deleteCurrentProfile()" id="btn-delete-profile" class="hidden px-3 py-2 text-xs font-semibold text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition" title="Delete this campaign and its contacts">
+                        <i class="fa-regular fa-trash-can mr-1"></i> Delete Campaign
+                    </button>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <span id="save-status" class="text-xs text-slate-400 hidden">Saving...</span>
+                    <button type="button" onclick="saveProfile()" id="btn-save-profile" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-5 py-2.5 rounded-lg shadow flex items-center space-x-2 transition">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        <span id="btn-save-text">Save Settings</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-lg shadow-xl hidden flex items-center space-x-2 transition z-50">
+        <i class="fa-solid fa-circle-check text-brand-500 text-sm"></i>
+        <span id="toast-msg">Action completed!</span>
+    </div>
+
+    <!-- Frontend Script -->
+    <script>
+        let allContacts = [];
+        let allCompanies = [];
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('stat-companies').innerText = data.total_companies;
+                document.getElementById('stat-drafts').innerText = data.drafted_count;
+                document.getElementById('stat-sent').innerText = data.sent_count;
+            } catch (e) {
+                console.error("Failed to load stats", e);
+            }
+        }
+
+        async function loadReviewCards() {
+            const statusFilter = document.getElementById('filter-status').value;
+            try {
+                const url = statusFilter === 'ALL' ? '/api/contacts' : `/api/contacts?status=${statusFilter}`;
+                const res = await fetch(url);
+                allContacts = await res.json();
+                renderCards(allContacts);
+            } catch (e) {
+                console.error("Failed to load contacts", e);
+            }
+        }
+
+        function renderCards(contacts) {
+            const grid = document.getElementById('review-cards-grid');
+            const noCards = document.getElementById('no-cards-msg');
+            grid.innerHTML = '';
+
+            if (!contacts || contacts.length === 0) {
+                noCards.classList.remove('hidden');
+                return;
+            }
+            noCards.classList.add('hidden');
+
+            contacts.forEach((c, idx) => {
+                const isEmail = !!c.email || !!c.draft_email;
+                const channelBadge = isEmail 
+                    ? `<span class="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-solid fa-envelope mr-1"></i> Email</span>`
+                    : `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-brands fa-linkedin mr-1"></i> LinkedIn Note</span>`;
+
+                const classColor = c.classification === 'Hiring Manager' ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                                 : c.classification === 'Advisory Mentor' ? 'bg-amber-50 text-amber-700 border-amber-200' 
+                                 : 'bg-emerald-50 text-emerald-700 border-emerald-200';
+
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-xl border border-slate-200 p-5 shadow-sm hover:shadow transition flex flex-col justify-between space-y-4";
+                card.id = `card-${idx}`;
+
+                card.innerHTML = `
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1 mr-3">
+                                <div class="flex items-center space-x-2">
+                                    <input id="name-input-${idx}" type="text" value="${c.full_name}" class="font-bold text-slate-900 text-sm bg-transparent border-b border-dashed border-slate-300 hover:border-brand-500 focus:border-brand-500 focus:bg-white focus:outline-none px-1 py-0.5 rounded w-full transition" title="Click to edit recipient name" />
+                                    <a href="${c.linkedin_url}" target="_blank" class="text-slate-400 hover:text-blue-600 text-xs shrink-0" title="Open LinkedIn Profile"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium mt-0.5">${c.title} &bull; <span class="text-slate-700 font-semibold">${c.company_domain}</span></p>
+                            </div>
+                            <div class="flex items-center space-x-1.5 shrink-0">
+                                ${channelBadge}
+                                <span class="${classColor} border text-[10px] font-semibold px-2 py-0.5 rounded-full">${c.classification || 'Prospect'}</span>
+                            </div>
+                        </div>
+
+                        ${isEmail ? `
+                        <div class="space-y-1">
+                            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recipient Work Email:</label>
+                            <div class="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 focus-within:border-brand-500 focus-within:bg-white transition">
+                                <i class="fa-regular fa-envelope text-slate-400 text-xs"></i>
+                                <input id="email-input-${idx}" type="email" value="${c.email || ''}" placeholder="first.last@${c.company_domain}" class="w-full text-xs text-slate-700 bg-transparent focus:outline-none font-medium" />
+                                <button onclick="navigator.clipboard.writeText(document.getElementById('email-input-${idx}').value); showToast('Copied email to clipboard!');" class="text-slate-400 hover:text-slate-700 text-xs" title="Copy Email"><i class="fa-regular fa-copy"></i></button>
+                            </div>
+                        </div>` : ''}
+
+                        <!-- Message Box -->
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-500">
+                                <span>Message Content:</span>
+                                ${!isEmail ? `<span id="char-count-${idx}" class="text-[10px] font-medium text-slate-400">0 / 300</span>` : ''}
+                            </div>
+                            <textarea id="msg-text-${idx}" oninput="updateCharCount(${idx})" class="w-full text-xs text-slate-800 bg-slate-50 border border-slate-200 rounded-lg p-3 focus:bg-white focus:ring-1 focus:ring-brand-500 focus:outline-none transition leading-relaxed font-sans resize-y" rows="5">${c.draft_email || c.draft_linkedin || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="copyDraft(${idx})" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded transition flex items-center space-x-1">
+                                <i class="fa-regular fa-copy"></i>
+                                <span>Copy Message</span>
+                            </button>
+                            <button onclick="saveDraft(${idx}, '${c.linkedin_url}')" class="text-slate-500 hover:text-slate-800 font-semibold px-2 py-1.5 rounded transition">
+                                Save Edit
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${c.outreach_status === 'SENT' ? `
+                            <button onclick="updateStatus('${c.linkedin_url}', 'DRAFTED')" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-semibold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1" title="Revert to Draft">
+                                <i class="fa-solid fa-rotate-left mr-1"></i>
+                                <span>Undo Sent</span>
+                            </button>` : `
+                            <button onclick="updateStatus('${c.linkedin_url}', 'SENT')" class="bg-brand-600 hover:bg-brand-700 text-white font-semibold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1" title="Mark this message as sent">
+                                <i class="fa-solid fa-check mr-1"></i>
+                                <span>Mark Sent</span>
+                            </button>`}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+                if (!isEmail) updateCharCount(idx);
+            });
+        }
+
+        function updateCharCount(idx) {
+            const textarea = document.getElementById(`msg-text-${idx}`);
+            const counter = document.getElementById(`char-count-${idx}`);
+            if (textarea && counter) {
+                const len = textarea.value.length;
+                counter.innerText = `${len} / 300`;
+                if (len > 300) {
+                    counter.className = "text-[10px] font-bold text-red-600";
+                } else {
+                    counter.className = "text-[10px] font-medium text-slate-400";
+                }
+            }
+        }
+
+        async function saveDraft(idx, linkedinUrl) {
+            const textarea = document.getElementById(`msg-text-${idx}`);
+            const nameInput = document.getElementById(`name-input-${idx}`);
+            const emailInput = document.getElementById(`email-input-${idx}`);
+            
+            const text = textarea ? textarea.value : '';
+            const nameVal = nameInput ? nameInput.value : '';
+            const emailVal = emailInput ? emailInput.value : null;
+            const contact = allContacts[idx];
+
+            const payload = {
+                linkedin_url: linkedinUrl,
+                full_name: nameVal || contact.full_name,
+                email: emailVal !== null ? emailVal : contact.email,
+                draft_email: contact.email ? text : null,
+                draft_linkedin: !contact.email ? text : null
+            };
+
+            const res = await fetch('/api/contacts/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                showToast("Card details saved successfully!");
+            }
+        }
+
+        async function copyDraft(idx) {
+            const textarea = document.getElementById(`msg-text-${idx}`);
+            if (textarea) {
+                await navigator.clipboard.writeText(textarea.value);
+                showToast("Copied message to clipboard!");
+            }
+        }
+
+        async function updateStatus(linkedinUrl, newStatus) {
+            const res = await fetch('/api/contacts/set-status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ linkedin_url: linkedinUrl, status: newStatus })
+            });
+            if (res.ok) {
+                if (newStatus === 'SENT') {
+                    showToast("Contact marked as SENT!");
+                } else {
+                    showToast("Reverted contact back to DRAFTED!");
+                }
+                fetchStats();
+                loadReviewCards();
+                loadContactsTable();
+            }
+        }
+
+        async function triggerAllocation() {
+            const btn = document.getElementById('run-btn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Running...</span>`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/run-allocation', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ daily_cap: 20 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (data.result.message) {
+                        showToast(data.result.message);
+                    } else {
+                        showToast(`Generated ${data.result.total_drafted} new outreach drafts!`);
+                    }
+                } else {
+                    showToast(`Error: ${data.error}`);
+                }
+            } catch (e) {
+                showToast("Allocation failed to execute.");
+            } finally {
+                btn.innerHTML = `<i class="fa-solid fa-bolt"></i> <span>Run Allocation</span>`;
+                btn.disabled = false;
+                fetchStats();
+                loadReviewCards();
+                loadContactsTable();
+            }
+        }
+
+        async function loadCompaniesTable() {
+            const res = await fetch('/api/companies');
+            const companies = await res.json();
+            const tbody = document.getElementById('companies-table-body');
+            tbody.innerHTML = '';
+
+            companies.forEach(c => {
+                const isTrack1 = (c.priority_tier === 1 || c.track === 'TRACK_1');
+                const trackBadge = isTrack1 
+                    ? `<span class="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded text-xs border border-purple-200"><i class="fa-solid fa-fire mr-1"></i>Track 1 (${c.applicant_count || '<80'} Apps)</span>`
+                    : `<span class="bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded text-xs border border-blue-200"><i class="fa-solid fa-star mr-1"></i>Track 2 (${c.strategic_score || 0} pts)</span>`;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-slate-800">${c.domain}</td>
+                    <td class="px-4 py-3">${c.company_name} <br/><span class="text-[11px] text-slate-400">${c.location || 'Los Angeles / Remote'}</span></td>
+                    <td class="px-4 py-3">${trackBadge}</td>
+                    <td class="px-4 py-3 text-xs text-slate-500">${c.tech_stack || 'N/A'}</td>
+                    <td class="px-4 py-3 text-xs">${c.job_source_url ? `<a href="${c.job_source_url}" target="_blank" class="text-blue-600 hover:underline">View Job <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>` : '—'}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400">${c.created_at || '—'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadContactsTable() {
+            const res = await fetch('/api/contacts');
+            const contacts = await res.json();
+            const tbody = document.getElementById('contacts-table-body');
+            tbody.innerHTML = '';
+
+            contacts.forEach(c => {
+                const isSent = (c.outreach_status === 'SENT');
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-semibold text-slate-800">${c.full_name} <br/><span class="text-xs text-slate-400 font-normal">${c.title}</span></td>
+                    <td class="px-4 py-3">${c.company_domain}</td>
+                    <td class="px-4 py-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">${c.classification || 'N/A'}</span></td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.email ? `<i class="fa-regular fa-envelope text-blue-500 mr-1"></i> ${c.email}` : `<i class="fa-brands fa-linkedin text-indigo-500 mr-1"></i> LinkedIn`}</td>
+                    <td class="px-4 py-3 text-xs">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isSent ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+                            ${c.outreach_status}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-xs">
+                        ${isSent ? `
+                        <button onclick="updateStatus('${c.linkedin_url}', 'DRAFTED')" class="text-xs text-slate-500 hover:text-amber-600 font-medium underline flex items-center space-x-1">
+                            <i class="fa-solid fa-rotate-left"></i> <span>Undo Sent</span>
+                        </button>` : `
+                        <button onclick="updateStatus('${c.linkedin_url}', 'SENT')" class="text-xs text-blue-600 hover:text-blue-800 font-medium underline flex items-center space-x-1">
+                            <i class="fa-solid fa-check"></i> <span>Mark Sent</span>
+                        </button>`}
+                    </td>
+                    <td class="px-4 py-3 text-xs text-slate-400">${c.sent_at || c.created_at || '—'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // -------------------------------------------------------------
+        // Multi-Profile & Multi-Campaign Operations
+        // -------------------------------------------------------------
+        let allProfiles = [];
+        let currentProfile = null;
+
+        async function fetchProfiles() {
+            try {
+                const res = await fetch('/api/profiles');
+                const data = await res.json();
+                allProfiles = data.profiles || [];
+                const activeId = data.active_id || (allProfiles[0] ? allProfiles[0].id : 1);
+
+                renderProfileDropdown(allProfiles, activeId);
+                await fetchActiveProfileDetails(activeId);
+            } catch (e) {
+                console.error("Failed to load profiles", e);
+            }
+        }
+
+        async function fetchActiveProfileDetails(profileId) {
+            try {
+                const url = profileId ? `/api/profile?id=${profileId}` : '/api/profile';
+                const res = await fetch(url);
+                const data = await res.json();
+                currentProfile = data.profile || {};
+
+                const label = document.getElementById('active-profile-label');
+                if (currentProfile && currentProfile.profile_name) {
+                    label.innerText = currentProfile.profile_name;
+                } else if (currentProfile && currentProfile.full_name) {
+                    label.innerText = currentProfile.full_name;
+                } else {
+                    label.innerText = "Select Profile";
+                }
+
+                if (!data.configured) {
+                    openProfileModal(true, false);
+                }
+            } catch (e) {
+                console.error("Failed to load active profile details", e);
+            }
+        }
+
+        function renderProfileDropdown(profiles, activeId) {
+            const container = document.getElementById('profiles-list-container');
+            container.innerHTML = '';
+
+            profiles.forEach(p => {
+                const isActive = (p.id === activeId);
+                const item = document.createElement('button');
+                item.className = `w-full text-left px-2.5 py-1.5 text-xs rounded-lg flex items-center justify-between transition ${isActive ? 'bg-emerald-50 text-emerald-900 font-bold' : 'text-slate-700 hover:bg-slate-100 font-medium'}`;
+                item.onclick = () => selectProfile(p.id);
+                item.innerHTML = `
+                    <div class="truncate mr-2">
+                        <div class="truncate leading-snug">${p.profile_name || p.full_name}</div>
+                        <div class="text-[10px] text-slate-400 font-normal truncate">${p.full_name} ${p.target_roles ? '&bull; ' + p.target_roles.split(',')[0] : ''}</div>
+                    </div>
+                    ${isActive ? '<i class="fa-solid fa-check text-brand-600 text-xs shrink-0"></i>' : ''}
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleProfileDropdown() {
+            const menu = document.getElementById('profile-dropdown-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('profile-dropdown-container');
+            if (container && !container.contains(e.target)) {
+                const menu = document.getElementById('profile-dropdown-menu');
+                if (menu && !menu.classList.contains('hidden')) {
+                    menu.classList.add('hidden');
+                }
+            }
+        });
+
+        async function selectProfile(profileId) {
+            const menu = document.getElementById('profile-dropdown-menu');
+            if (menu) menu.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/profiles/switch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: profileId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(`Switched campaign to: ${data.active_profile.profile_name || data.active_profile.full_name}`);
+                    await fetchProfiles();
+                    fetchStats();
+                    loadReviewCards();
+                    const activeTab = document.querySelector('.tab-active');
+                    if (activeTab && activeTab.id === 'tab-btn-contacts') loadContactsTable();
+                    if (activeTab && activeTab.id === 'tab-btn-companies') loadCompaniesTable();
+                }
+            } catch (e) {
+                showToast("Failed to switch profile");
+            }
+        }
+
+        function createNewProfileClick() {
+            const menu = document.getElementById('profile-dropdown-menu');
+            if (menu) menu.classList.add('hidden');
+            openProfileModal(false, true); // isFirstRun=false, isNew=true
+        }
+
+        function editCurrentProfileClick() {
+            const menu = document.getElementById('profile-dropdown-menu');
+            if (menu) menu.classList.add('hidden');
+            openProfileModal(false, false); // isFirstRun=false, isNew=false
+        }
+
+        function openProfileModal(isFirstRun = false, isNew = false) {
+            const modal = document.getElementById('profile-modal');
+            const banner = document.getElementById('onboarding-banner');
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const delBtn = document.getElementById('btn-delete-profile');
+
+            if (isFirstRun) {
+                banner.classList.remove('hidden');
+                title.innerText = "Welcome to SideDoor AI — Set Up Your Agent";
+                subtitle.innerText = "Complete your profile below to start finding companies & generating outreach.";
+            } else if (isNew) {
+                banner.classList.add('hidden');
+                title.innerText = "Create New Job Search Campaign";
+                subtitle.innerText = "Target a new set of roles, cities, or industry preferences with dedicated outreach.";
+            } else {
+                banner.classList.add('hidden');
+                title.innerText = "Edit Campaign Settings";
+                subtitle.innerText = "Update your search targets, skills, or personal voice samples.";
+            }
+
+            // Delete button visibility: only in edit mode and if more than 1 profile exists
+            if (!isNew && allProfiles.length > 1) {
+                delBtn.classList.remove('hidden');
+            } else {
+                delBtn.classList.add('hidden');
+            }
+
+            if (isNew) {
+                document.getElementById('prof-id').value = "";
+                document.getElementById('prof-campaign-name').value = "New Search Track";
+                document.getElementById('prof-full-name').value = (currentProfile && currentProfile.full_name) ? currentProfile.full_name : "";
+                document.getElementById('prof-email').value = (currentProfile && currentProfile.email) ? currentProfile.email : "";
+                document.getElementById('prof-linkedin-url').value = (currentProfile && currentProfile.linkedin_url) ? currentProfile.linkedin_url : "";
+                document.getElementById('prof-alma-mater').value = (currentProfile && currentProfile.alma_mater) ? currentProfile.alma_mater : "";
+                document.getElementById('prof-degree-major').value = (currentProfile && currentProfile.degree_major) ? currentProfile.degree_major : "";
+                document.getElementById('prof-grad-year').value = (currentProfile && currentProfile.grad_year) ? currentProfile.grad_year : "";
+                document.getElementById('prof-bio-summary').value = "";
+                document.getElementById('prof-skills').value = "";
+                document.getElementById('prof-target-roles').value = "";
+                document.getElementById('prof-target-locations').value = "";
+                document.getElementById('prof-sample-hm').value = "";
+                document.getElementById('prof-sample-yp').value = "";
+                document.getElementById('prof-gemini-key').value = "";
+                document.getElementById('prof-hunter-key').value = "";
+                document.getElementById('gemini-key-status').innerText = "Uses existing key unless changed.";
+                document.getElementById('hunter-key-status').innerText = "Uses existing key unless changed.";
+            } else if (currentProfile) {
+                document.getElementById('prof-id').value = currentProfile.id || "";
+                document.getElementById('prof-campaign-name').value = currentProfile.profile_name || "Default Campaign";
+                document.getElementById('prof-full-name').value = currentProfile.full_name || "";
+                document.getElementById('prof-email').value = currentProfile.email || "";
+                document.getElementById('prof-linkedin-url').value = currentProfile.linkedin_url || "";
+                document.getElementById('prof-alma-mater').value = currentProfile.alma_mater || "";
+                document.getElementById('prof-degree-major').value = currentProfile.degree_major || "";
+                document.getElementById('prof-grad-year').value = currentProfile.grad_year || "";
+                document.getElementById('prof-bio-summary').value = currentProfile.bio_summary || "";
+                document.getElementById('prof-skills').value = currentProfile.skills || "";
+                document.getElementById('prof-target-roles').value = currentProfile.target_roles || "";
+                document.getElementById('prof-target-locations').value = currentProfile.target_locations || "";
+                document.getElementById('prof-sample-hm').value = currentProfile.sample_hiring_manager || "";
+                document.getElementById('prof-sample-yp').value = currentProfile.sample_young_professional || "";
+
+                const gStat = document.getElementById('gemini-key-status');
+                if (currentProfile.has_gemini_key) {
+                    gStat.innerHTML = `<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-check mr-1"></i>Key configured (${currentProfile.gemini_api_key_masked})</span>`;
+                    document.getElementById('prof-gemini-key').placeholder = "Configured. Enter new key to replace...";
+                } else {
+                    gStat.innerText = "Not configured. Gemini is needed for message copywriting.";
+                    document.getElementById('prof-gemini-key').placeholder = "Enter Gemini API key...";
+                }
+
+                const hStat = document.getElementById('hunter-key-status');
+                if (currentProfile.has_hunter_key) {
+                    hStat.innerHTML = `<span class="text-emerald-600 font-semibold"><i class="fa-solid fa-check mr-1"></i>Key configured (${currentProfile.hunter_api_key_masked})</span>`;
+                    document.getElementById('prof-hunter-key').placeholder = "Configured. Enter new key to replace...";
+                } else {
+                    hStat.innerText = "Optional. Needed to find verified emails & real names.";
+                    document.getElementById('prof-hunter-key').placeholder = "Enter Hunter.io API key...";
+                }
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profile-modal').classList.add('hidden');
+        }
+
+        async function deleteCurrentProfile() {
+            if (!currentProfile || !currentProfile.id) return;
+            if (!confirm(`Are you sure you want to delete the "${currentProfile.profile_name}" campaign and all its drafted contacts? This cannot be undone.`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/profiles/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profile_id: currentProfile.id })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Campaign deleted.");
+                    closeProfileModal();
+                    await fetchProfiles();
+                    fetchStats();
+                    loadReviewCards();
+                } else {
+                    showToast("Cannot delete the last remaining campaign.");
+                }
+            } catch (e) {
+                showToast("Error deleting campaign");
+            }
+        }
+
+        function toggleResumeAccordion() {
+            const content = document.getElementById('resume-accordion-content');
+            const icon = document.getElementById('accordion-toggle-icon');
+            const isHidden = content.classList.contains('hidden');
+            if (isHidden) {
+                content.classList.remove('hidden');
+                icon.className = "fa-solid fa-chevron-up text-[10px] ml-1";
+            } else {
+                content.classList.add('hidden');
+                icon.className = "fa-solid fa-chevron-down text-[10px] ml-1";
+            }
+        }
+
+        async function parseResumeWithAI() {
+            const text = document.getElementById('resume-raw-text').value.trim();
+            if (!text) {
+                showToast("Please paste some resume text first!");
+                return;
+            }
+
+            const btn = document.getElementById('btn-parse-resume');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Extracting...</span>`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/profile/parse-resume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                const data = await res.json();
+                if (data.success && data.extracted) {
+                    const ext = data.extracted;
+                    if (ext.full_name) document.getElementById('prof-full-name').value = ext.full_name;
+                    if (ext.email) document.getElementById('prof-email').value = ext.email;
+                    if (ext.linkedin_url) document.getElementById('prof-linkedin-url').value = ext.linkedin_url;
+                    if (ext.alma_mater) document.getElementById('prof-alma-mater').value = ext.alma_mater;
+                    if (ext.degree_major) document.getElementById('prof-degree-major').value = ext.degree_major;
+                    if (ext.grad_year) document.getElementById('prof-grad-year').value = ext.grad_year;
+                    if (ext.bio_summary) document.getElementById('prof-bio-summary').value = ext.bio_summary;
+                    if (ext.skills) document.getElementById('prof-skills').value = ext.skills;
+                    if (ext.target_roles) document.getElementById('prof-target-roles').value = ext.target_roles;
+                    if (ext.target_locations) document.getElementById('prof-target-locations').value = ext.target_locations;
+
+                    showToast("Form auto-filled from resume!");
+                    toggleResumeAccordion();
+                } else {
+                    showToast("Extraction error: " + (data.error || "Could not parse text"));
+                }
+            } catch (e) {
+                showToast("Failed to connect to parser");
+            } finally {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+
+        async function saveProfile() {
+            const fullName = document.getElementById('prof-full-name').value.trim();
+            const campName = document.getElementById('prof-campaign-name').value.trim();
+            if (!fullName) {
+                showToast("Please provide your full name.");
+                document.getElementById('prof-full-name').focus();
+                return;
+            }
+
+            const profIdVal = document.getElementById('prof-id').value;
+            const payload = {
+                id: profIdVal ? parseInt(profIdVal, 10) : null,
+                profile_name: campName || `${fullName} Campaign`,
+                full_name: fullName,
+                email: document.getElementById('prof-email').value.trim(),
+                linkedin_url: document.getElementById('prof-linkedin-url').value.trim(),
+                alma_mater: document.getElementById('prof-alma-mater').value.trim(),
+                degree_major: document.getElementById('prof-degree-major').value.trim(),
+                grad_year: document.getElementById('prof-grad-year').value.trim(),
+                bio_summary: document.getElementById('prof-bio-summary').value.trim(),
+                skills: document.getElementById('prof-skills').value.trim(),
+                target_roles: document.getElementById('prof-target-roles').value.trim(),
+                target_locations: document.getElementById('prof-target-locations').value.trim(),
+                gemini_api_key: document.getElementById('prof-gemini-key').value.trim(),
+                hunter_api_key: document.getElementById('prof-hunter-key').value.trim(),
+                sample_hiring_manager: document.getElementById('prof-sample-hm').value.trim(),
+                sample_young_professional: document.getElementById('prof-sample-yp').value.trim()
+            };
+
+            const btn = document.getElementById('btn-save-profile');
+            const saveText = document.getElementById('btn-save-text');
+            const originalText = saveText.innerText;
+            saveText.innerText = "Saving...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Campaign settings saved successfully!");
+                    closeProfileModal();
+                    await fetchProfiles();
+                    fetchStats();
+                    loadReviewCards();
+                } else {
+                    showToast("Error saving campaign: " + (data.error || "Unknown"));
+                }
+            } catch (e) {
+                showToast("Network error saving profile");
+            } finally {
+                saveText.innerText = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        function switchTab(tabId) {
+            ['review', 'companies', 'contacts'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).className = "py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2";
+            });
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabId}`).className = "py-3 px-1 tab-active flex items-center space-x-2";
+
+            if (tabId === 'companies') loadCompaniesTable();
+            if (tabId === 'contacts') loadContactsTable();
+            if (tabId === 'review') loadReviewCards();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+        }
+
+        // Initial Load
+        fetchProfiles();
+        fetchStats();
+        loadReviewCards();
+    </script>
+</body>
+</html>

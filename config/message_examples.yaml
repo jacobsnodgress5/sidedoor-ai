@@ -1,0 +1,113 @@
+# SideDoor AI: Few-Shot Training Samples & Tone Configuration
+
+sender_profile:
+  name: "Job Seeker"
+  education: "B.S. in Computer Science & Applied Mathematics"
+  background: "Software engineer and researcher passionate about building scalable and intelligent systems."
+  skills: "Python, SQL, PyTorch, React, Cloud"
+  target_roles: "Software Engineer, Data Scientist, Machine Learning Engineer"
+  email: "your.email@example.com"
+  linkedin: "https://linkedin.com/in/yourprofile"
+
+# ==============================================================================
+# PASTE YOUR PAST REAL MESSAGES HERE
+# The AI copywriter will analyze these examples to match your exact voice and style!
+# ==============================================================================
+user_provided_examples:
+  hiring_manager_samples:
+    - |
+      Message 1
+      Subject: Data Science at blank?
+      Hi [name],
+      I know your company’s in a later-growth stage business. From your JD, your data team seems to be at a critical stage of growth.
+      I’ve spent the last year data scientist skills in-depth in an academic setting. Beyond that, I’ve 2+ years of technical experience. I would jump at the chance to see the early stages of implementation at a hyper-growth startup.
+      Here’s my resume, I’d love to chat further.
+
+      Message 2
+      Hi [name]
+      I’ve been a long time admirer of [company] and how they drive efficiency through data driven decision making. 
+      I’ve recently built multiple systems based on the idea of improving efficiency and output through data, particularly through ML using model types like XGBoost. I would love the opportunity to chat and get a peek at how you use data for decision making at [company]
+      I’d love to talk soon
+
+  young_professional_samples:
+    - |
+      Message 1
+      15 mins to learn about your path?
+      Hi Josh! I saw that you have an interesting and unique background in ML, Data Science and economics and I was curious to get in touch with you. Do you have 15 minutes for a quick chat next Monday or Tuesday? 
+      Message 2
+      Hey Virginia! I found your profile through my interest in Unstructured and saw you have an impressive career in Data Engineering. I’d love to pick your brain if you're open to it! 
+# ==============================================================================
+# Core Archetype Templates (Open-ended ending, No Calendly Link)
+# ==============================================================================
+message_archetypes:
+  # -----------------------------------------------------------------------------
+  # Archetype 1: Hiring Manager — Specific Job Applied For
+  # -----------------------------------------------------------------------------
+  hiring_manager_applied:
+    email_template: |
+      Subject: Application for {job_title} - {sender_name} ({alma_mater})
+
+      Hi {first_name},
+
+      I recently submitted my application for the {job_title} role at {company_name} and wanted to reach out directly.
+
+      I recently graduated from {alma_mater} in {degree_major}, where I worked on predictive engineering models and data pipelines. Given {company_name}'s focus on {tech_focus}, I'm confident my analytical background and hands-on experience would allow me to contribute quickly to your team's goals.
+
+      {hook_section}
+
+      I know you have a busy schedule, but would you be open to a brief 10-minute chat sometime next week to discuss how my skill set aligns with your team's priorities?
+
+      Best regards,
+      {sender_name}
+      {email} | {linkedin}
+
+    linkedin_note_template: |
+      Hi {first_name}, I recently applied for the {job_title} role at {company_name}! I'm a recent {alma_mater} {degree_major} grad. Would love to connect and chat briefly about the team's work if you're open to it! - {sender_name}
+
+  # -----------------------------------------------------------------------------
+  # Archetype 2: Hiring Manager — General / Proactive (No Job Applied)
+  # -----------------------------------------------------------------------------
+  hiring_manager_general:
+    email_template: |
+      Subject: Engineering & Data at {company_name} - {sender_name} ({alma_mater})
+
+      Hi {first_name},
+
+      I’ve been closely following {company_name}'s technical growth in {tech_focus} and wanted to introduce myself.
+
+      I recently graduated from {alma_mater} in {degree_major}, where I engineered predictive mathematical models and data pipelines. 
+
+      {hook_section}
+
+      I'd love to learn about your upcoming engineering priorities and see if my background could be a strong fit for your team as headcount opens up. Would you be open to a brief conversation sometime next week?
+
+      Best regards,
+      {sender_name}
+      {email} | {linkedin}
+
+    linkedin_note_template: |
+      Hi {first_name}, I've been following {company_name}'s work in {tech_focus}. As a recent {alma_mater} {degree_major} grad, I'd love to connect and learn about your team's engineering priorities! - {sender_name}
+
+  # -----------------------------------------------------------------------------
+  # Archetype 3: Young Professional (1-8 yrs exp, prioritized 2-5 yrs) — Topic Driven
+  # -----------------------------------------------------------------------------
+  young_professional_topic:
+    email_template: |
+      Subject: Quick question regarding your journey at {company_name} from a {alma_mater} grad
+
+      Hi {first_name},
+
+      I came across your profile while researching {company_name}'s engineering team, and was really intrigued by your work on {scanned_topic}.
+
+      As a recent {alma_mater} graduate in {degree_major}, I'm currently navigating early-career pathways and greatly admire how you transitioned into your current role.
+
+      {hook_section}
+
+      If you have a few minutes sometime soon, I would love to hear your perspective on the engineering culture at {company_name} and any advice for an early-career engineer. Would you be open to a quick virtual chat?
+
+      Warm regards,
+      {sender_name}
+      {email} | {linkedin}
+
+    linkedin_note_template: |
+      Hi {first_name}, saw your impressive journey at {company_name} working on {scanned_topic}! As a recent {alma_mater} {degree_major} grad, I'd love to connect and hear a bit about your experience if you're open to it. - {sender_name}
