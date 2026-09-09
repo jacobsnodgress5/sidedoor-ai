@@ -112,8 +112,8 @@ email:
 
 # LLM Configuration
 llm:
-  # The Gemini model to use. gemini-2.5-flash or gemini-1.5-flash are cost-efficient.
-  model: "gemini-2.5-flash"
+  # The Gemini model to use. gemini-3.5-flash is ultra-fast and reliable.
+  model: "gemini-3.5-flash"
   # Paste your Gemini API key here directly. Alternatively, leave this blank
   # and set the GEMINI_API_KEY environment variable (already configured in .env).
   api_key: ""

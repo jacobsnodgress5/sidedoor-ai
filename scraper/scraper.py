@@ -21,26 +21,44 @@ def parse_applicant_count(text):
     """
     Parses applicant count text. Examples:
     - "45 applicants" -> 45
-    - "Over 200 applicants" -> 200
+    - "5 people clicked apply" / "1 person clicked apply" -> 5 / 1
+    - "Over 200 applicants" / "Over 100 people clicked apply" -> 200 / 100
     - "Be among the first 10 applicants" -> 9
-    - "12 applicants" -> 12
+    - "Be among the first 25 applicants" -> 24
+    - "Be an early applicant" -> 5
+    - "1,500 applicants" -> 1500
     - "No applicants" -> 0
     Returns integer applicant count or 0 if not found.
     """
     if not text:
         return 0
-    # Remove commas to handle thousands separators like "1,596" -> "1596"
-    text = text.lower().strip().replace(",", "")
     import re
-    
-    # Check for "first 10 applicants"
-    if "first 10" in text:
-        return 9
-    
-    # Find any numbers in the text
-    matches = re.findall(r'\d+', text)
-    if matches:
-        return int(matches[0])
+    clean = text.lower().replace(",", "").strip()
+
+    # Check for early applicant indicators without specific digits
+    if "early applicant" in clean or "first applicant" in clean:
+        return 5
+
+    # 1. 'Be among the first X applicants'
+    m_first = re.search(r'(?:first|among the first)\s*(\d+)\s*applicants?', clean)
+    if m_first:
+        return max(1, int(m_first.group(1)) - 1)
+
+    # 2. 'Over X applicants' / 'More than X applicants' / 'Over X people clicked apply'
+    m_over = re.search(r'(?:over|more than)\s*(\d+)\s*(?:people|person)?\s*(?:applied|applicants?|clicked\s+apply)', clean)
+    if m_over:
+        return int(m_over.group(1))
+
+    # 3. 'X people/person clicked apply' / 'X applied' / 'X applicants'
+    m_num = re.search(r'(\d+)\s*(?:\+|plus)?\s*(?:people|person)?\s*(?:clicked\s+apply|applied|applicants?)', clean)
+    if m_num:
+        return int(m_num.group(1))
+
+    # 4. Fallback: digits followed anywhere by applicant/apply keywords
+    m_fall = re.search(r'(\d+)\s*(?:people|person)?\s*(?:clicked\s+apply|applied|applicants?)', clean)
+    if m_fall:
+        return int(m_fall.group(1))
+
     return 0
 
 def scrape_jobs():
@@ -244,38 +262,38 @@ def scrape_jobs():
                         desc_el = page.query_selector(".jobs-description-content__text, #job-details, .jobs-description")
                         description = desc_el.inner_text().strip() if desc_el else ""
                         
-                        # Extract applicant count
+                        # Extract applicant count with robust multi-tag search + page-text fallback
                         applicant_text = ""
-                        applicant_selectors = [
-                            ".jobs-unified-top-card__content .jobs-unified-top-card__subtitle",
-                            ".jobs-unified-top-card__content span:has-text('applicant')",
-                            ".jobs-unified-top-card__content span:has-text('applicants')",
-                            ".jobs-unified-top-card__content span:has-text('apply')",
-                            ".jobs-details-premium-insight",
-                            ".job-details-jobs-unified-top-card__subtitle-list"
-                        ]
-                        for sel in applicant_selectors:
-                            el = page.query_selector(sel)
-                            if el:
-                                txt = el.inner_text().lower()
-                                if any(k in txt for k in ["applicant", "apply", "clicked"]):
-                                    for line in el.inner_text().split("·"):
-                                        line_lower = line.lower()
-                                        if any(k in line_lower for k in ["applicant", "apply", "clicked"]):
-                                            applicant_text = line.strip()
+                        for tag in ["span", "p", "div", "li", "strong"]:
+                            candidate_elements = page.query_selector_all(f"{tag}:has-text('clicked apply'), {tag}:has-text('applicant'), {tag}:has-text('applied')")
+                            for el in candidate_elements:
+                                try:
+                                    txt = el.inner_text().strip()
+                                    # Target short metadata badges/lines, not the whole description
+                                    if 0 < len(txt) < 140:
+                                        cnt = parse_applicant_count(txt)
+                                        if cnt > 0 or "early applicant" in txt.lower():
+                                            applicant_text = txt
                                             break
-                                    if applicant_text:
-                                        break
-                        
+                                except Exception:
+                                    continue
+                            if applicant_text:
+                                break
+
                         if not applicant_text:
-                            top_card_el = page.query_selector(".jobs-unified-top-card__content")
-                            if top_card_el:
-                                text = top_card_el.inner_text()
-                                import re
-                                matches = re.findall(r'.*?(?:applicant|apply|clicked).*?', text, re.IGNORECASE)
-                                if matches:
-                                    applicant_text = matches[0].strip()
-                        
+                            # Fallback: inspect the first 2500 characters of the page text (headers, subtitles, badges)
+                            try:
+                                body_sample = page.inner_text("body")[:2500]
+                                for line in body_sample.split("\n"):
+                                    line_clean = line.strip()
+                                    if any(k in line_clean.lower() for k in ["applicant", "applied", "clicked apply"]):
+                                        cnt = parse_applicant_count(line_clean)
+                                        if cnt > 0 or "early applicant" in line_clean.lower():
+                                            applicant_text = line_clean
+                                            break
+                            except Exception:
+                                pass
+
                         applicants_count = parse_applicant_count(applicant_text)
                         print(f"    Applicants: {applicants_count} (Raw: '{applicant_text}')")
                         

@@ -62,6 +62,48 @@ def run_stage1_regex_filter(job, config):
 
     return False, None
 
+def generate_content_with_retry(client, contents, system_instruction, primary_model="gemini-3.5-flash", response_mime_type="application/json"):
+    """
+    Executes Gemini content generation with:
+    1. Automatic model fallback cascade: [primary_model, "gemini-flash-lite-latest"]
+    2. Exponential backoff retries (3 attempts: 2s, 4s, 8s) on 503 UNAVAILABLE, 429, or transient errors.
+    """
+    import time
+
+    models_to_try = [primary_model]
+    if "gemini-flash-lite-latest" not in models_to_try:
+        models_to_try.append("gemini-flash-lite-latest")
+    if "gemini-3.5-flash" not in models_to_try:
+        models_to_try.append("gemini-3.5-flash")
+
+    last_error = None
+    for model in models_to_try:
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=contents,
+                    config=types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        response_mime_type=response_mime_type,
+                        temperature=0.1
+                    )
+                )
+                return response.text.strip()
+            except Exception as e:
+                err_str = str(e).lower()
+                last_error = e
+                is_transient = any(k in err_str for k in ["503", "unavailable", "429", "resource_exhausted", "quota", "overloaded", "demand"])
+                if is_transient and attempt < 2:
+                    wait_time = 2 ** (attempt + 1)
+                    print(f"[LLM] Model '{model}' transient demand notice. Retrying in {wait_time}s (attempt {attempt+1}/3)...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"[LLM] Model '{model}' not available: {e}. Moving to next fallback model in cascade...")
+                    break
+
+    raise RuntimeError(f"Gemini API request failed across all fallback models. Last error: {last_error}")
+
 def run_stage2_llm_filter(job, config):
     """
     Stage 2: Gemini LLM Filter
@@ -82,14 +124,14 @@ def run_stage2_llm_filter(job, config):
         print(f"[WARNING] Gemini API key not found in config.yaml or environment variable! Skipping Stage 2 LLM and marking as BEST_FIT.")
         return "BEST_FIT", "Skipped LLM filter due to missing API key."
 
-    model_name = llm_cfg.get("model", "gemini-1.5-flash")
+    model_name = llm_cfg.get("model", "gemini-3.5-flash")
     
     # Initialize the new google-genai Client
     try:
         client = genai.Client(api_key=api_key)
     except Exception as err:
         print(f"[ERROR] Failed to initialize Gemini Client: {err}")
-        return "BEST_FIT", "Skipped LLM filter due to client initialization error."
+        return "WORSE_FIT", f"Skipped LLM filter due to client initialization error: {err}"
 
     # Construct the Candidate Profile Context for the LLM
     profile = config.get("profile", {})
@@ -128,18 +170,20 @@ def run_stage2_llm_filter(job, config):
     )
 
     try:
-        response = client.models.generate_content(
-            model=model_name,
+        res_text = generate_content_with_retry(
+            client=client,
             contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_instruction,
-                response_mime_type="application/json",
-                temperature=0.1
-            )
+            system_instruction=system_instruction,
+            primary_model=model_name
         )
         
+        # Clean up potential markdown code block markers
+        if res_text.startswith("```"):
+            res_text = re.sub(r'^```(?:json)?\n', '', res_text)
+            res_text = re.sub(r'\n```$', '', res_text)
+
         # Parse JSON output
-        result = json.loads(response.text.strip())
+        result = json.loads(res_text)
         category = result.get("category", "EXCLUDE")
         reason = result.get("reason", "No reason provided by LLM.")
         
@@ -151,8 +195,8 @@ def run_stage2_llm_filter(job, config):
         return category, reason
 
     except Exception as e:
-        print(f"[ERROR] Gemini API call failed: {e}")
-        return "BEST_FIT", f"Failed LLM filter call: {e}"
+        print(f"[ERROR] Gemini API call failed after retries: {e}")
+        return "WORSE_FIT", f"Qualification deferred: temporary service unavailability."
 
 def evaluate_job(job):
     """
@@ -212,7 +256,7 @@ def evaluate_all_jobs(raw_jobs):
             best_fit.append(job)
         return best_fit, worse_fit, excluded_count
 
-    model_name = llm_cfg.get("model", "gemini-2.5-flash")
+    model_name = llm_cfg.get("model", "gemini-3.5-flash")
     profile = config.get("profile", {})
     profile_text = yaml.dump(profile, default_flow_style=False)
     
@@ -221,13 +265,13 @@ def evaluate_all_jobs(raw_jobs):
     except Exception as err:
         print(f"[ERROR] Failed to initialize Gemini Client: {err}")
         for job in passing_jobs:
-            job["category"] = "BEST_FIT"
+            job["category"] = "WORSE_FIT"
             job["reason"] = f"Skipped LLM filter due to client initialization error: {err}"
-            best_fit.append(job)
+            worse_fit.append(job)
         return best_fit, worse_fit, excluded_count
 
-    # Batch size of 15 for fast high-throughput evaluation
-    batch_size = 15
+    # Batch size of 5 for faster, lightweight requests with high success rate
+    batch_size = 5
     for i in range(0, len(passing_jobs), batch_size):
         batch = passing_jobs[i:i+batch_size]
         
@@ -254,7 +298,7 @@ def evaluate_all_jobs(raw_jobs):
                 "title": job["title"],
                 "company": job["company"],
                 "location": job["location"],
-                "description": job.get("description", "")[:6000] # Limit description length to avoid excessively large tokens
+                "description": job.get("description", "")[:5000] # Limit description length to avoid excessively large tokens
             })
             
         prompt = (
@@ -272,18 +316,13 @@ def evaluate_all_jobs(raw_jobs):
         
         try:
             print(f"[LLM] Evaluating batch of {len(batch)} jobs via Gemini ({i//batch_size + 1}/{(len(passing_jobs)-1)//batch_size + 1})...")
-            response = client.models.generate_content(
-                model=model_name,
+            res_text = generate_content_with_retry(
+                client=client,
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_instruction,
-                    response_mime_type="application/json",
-                    temperature=0.1
-                )
+                system_instruction=system_instruction,
+                primary_model=model_name
             )
             
-            # Parse response JSON
-            res_text = response.text.strip()
             # Clean up potential markdown code block markers
             if res_text.startswith("```"):
                 res_text = re.sub(r'^```(?:json)?\n', '', res_text)
@@ -303,8 +342,8 @@ def evaluate_all_jobs(raw_jobs):
                     if category not in ["BEST_FIT", "WORSE_FIT", "EXCLUDE"]:
                         category = "EXCLUDE"
                 else:
-                    category = "BEST_FIT"
-                    reason = "Failed to match batch classification ID. Defaulting to BEST_FIT."
+                    category = "WORSE_FIT"
+                    reason = "Batch evaluation missed specific ID. Defaulted to manual review."
                     
                 job["category"] = category
                 job["reason"] = reason
@@ -317,10 +356,10 @@ def evaluate_all_jobs(raw_jobs):
                     excluded_count += 1
                     
         except Exception as e:
-            print(f"[ERROR] Batch LLM evaluation failed: {e}. Falling back to individual evaluation.")
+            print(f"[ERROR] Batch LLM evaluation failed after retries: {e}. Falling back to individual evaluation.")
             # Fallback to individual evaluations for this batch
             for job in batch:
-                time.sleep(5)
+                time.sleep(2.0)
                 category, reason = run_stage2_llm_filter(job, config)
                 job["category"] = category
                 job["reason"] = reason
@@ -331,9 +370,9 @@ def evaluate_all_jobs(raw_jobs):
                 else:
                     excluded_count += 1
                     
-        # Sleep for 1.5 seconds between batches to respect 15 RPM
+        # Sleep for 2.0 seconds between batches to strictly honor 15 RPM
         if i + batch_size < len(passing_jobs):
-            time.sleep(1.5)
+            time.sleep(2.0)
             
     return best_fit, worse_fit, excluded_count
 
