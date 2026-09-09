@@ -3,6 +3,9 @@ import sys
 import json
 import sqlite3
 import urllib.parse
+import threading
+import subprocess
+import time
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from typing import Dict, Any, Optional, List
 
@@ -25,9 +28,82 @@ from src.db.db import (
     save_profile,
     delete_profile,
     get_local_profile,
-    save_local_profile
+    save_local_profile,
+    get_scraped_jobs,
+    toggle_job_sourcing,
+    bulk_toggle_job_sourcing,
+    get_today_scraped_jobs_count,
+    get_sourcing_settings,
+    save_sourcing_settings,
+    get_selected_companies_for_sourcing
 )
 from src.allocation_engine import run_daily_allocation
+
+SCRAPER_STATE = {
+    "running": False,
+    "pid": None,
+    "status": "IDLE",
+    "message": "Scraper is idle.",
+    "started_at": None,
+    "finished_at": None,
+    "last_exit_code": None,
+    "logs": []
+}
+
+def _run_scraper_worker():
+    global SCRAPER_STATE
+    script_path = os.path.join(PROJECT_ROOT, "scraper", "main.py")
+    try:
+        SCRAPER_STATE["running"] = True
+        SCRAPER_STATE["status"] = "RUNNING"
+        SCRAPER_STATE["message"] = "Starting scraper pipeline..."
+        SCRAPER_STATE["started_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        SCRAPER_STATE["finished_at"] = None
+        SCRAPER_STATE["last_exit_code"] = None
+        SCRAPER_STATE["logs"] = []
+
+        env = dict(os.environ)
+        env["PYTHONUNBUFFERED"] = "1"
+        proc = subprocess.Popen(
+            [sys.executable, script_path],
+            cwd=PROJECT_ROOT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env
+        )
+        SCRAPER_STATE["pid"] = proc.pid
+
+        for line in iter(proc.stdout.readline, ''):
+            if not line:
+                break
+            clean_line = line.strip()
+            if clean_line:
+                SCRAPER_STATE["logs"].append(clean_line)
+                if len(SCRAPER_STATE["logs"]) > 100:
+                    SCRAPER_STATE["logs"].pop(0)
+                if "[System]" in clean_line:
+                    SCRAPER_STATE["message"] = clean_line.replace("[System]", "").strip()
+                elif "[ERROR]" in clean_line:
+                    SCRAPER_STATE["message"] = clean_line.strip()
+
+        proc.stdout.close()
+        return_code = proc.wait()
+        SCRAPER_STATE["running"] = False
+        SCRAPER_STATE["last_exit_code"] = return_code
+        SCRAPER_STATE["finished_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        if return_code == 0:
+            SCRAPER_STATE["status"] = "COMPLETED"
+            SCRAPER_STATE["message"] = "Scraping & evaluation completed successfully."
+        else:
+            SCRAPER_STATE["status"] = "FAILED"
+            SCRAPER_STATE["message"] = f"Scraper exited with code {return_code}."
+    except Exception as e:
+        SCRAPER_STATE["running"] = False
+        SCRAPER_STATE["status"] = "FAILED"
+        SCRAPER_STATE["message"] = f"Error running scraper: {str(e)}"
+        SCRAPER_STATE["finished_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
 
 PORT = 8080
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
@@ -80,6 +156,28 @@ class SideDoorDashboardHandler(SimpleHTTPRequestHandler):
                     "configured": bool(prof.get("is_configured", 0) and prof.get("full_name")),
                     "profile": masked_prof
                 })
+        elif path == "/api/jobs":
+            active = get_active_profile()
+            prof_id = active["id"] if active else 1
+            qs = urllib.parse.parse_qs(parsed_url.query)
+            cat = qs.get("category", [None])[0]
+            date_filter = qs.get("date", [None])[0]
+            jobs = get_scraped_jobs(profile_id=prof_id, date_filter=date_filter, category=cat)
+            metrics = get_today_scraped_jobs_count(profile_id=prof_id)
+            self.send_json_response({"jobs": jobs, "metrics": metrics})
+        elif path == "/api/scraper/status":
+            active = get_active_profile()
+            prof_id = active["id"] if active else 1
+            metrics = get_today_scraped_jobs_count(profile_id=prof_id)
+            self.send_json_response({
+                "scraper_state": SCRAPER_STATE,
+                "metrics": metrics
+            })
+        elif path == "/api/settings":
+            active = get_active_profile()
+            prof_id = active["id"] if active else 1
+            settings = get_sourcing_settings(profile_id=prof_id)
+            self.send_json_response(settings)
         elif path == "/" or path == "/index.html":
             self.serve_dashboard_html()
         else:
@@ -222,6 +320,41 @@ class SideDoorDashboardHandler(SimpleHTTPRequestHandler):
                 self.send_json_response({"success": True, "extracted": parsed})
             except Exception as e:
                 self.send_json_response({"success": False, "error": str(e)}, status_code=500)
+
+        elif path == "/api/scraper/run":
+            if SCRAPER_STATE["running"]:
+                self.send_json_response({"success": False, "message": "Scraper is already running."}, status_code=400)
+            else:
+                thread = threading.Thread(target=_run_scraper_worker, daemon=True)
+                thread.start()
+                self.send_json_response({"success": True, "message": "Scraper started in background."})
+
+        elif path == "/api/jobs/toggle-sourcing":
+            job_id = data.get("job_id")
+            selected = data.get("selected")
+            if not job_id:
+                self.send_json_response({"error": "Missing job_id"}, status_code=400)
+                return
+            res = toggle_job_sourcing(job_id, selected)
+            self.send_json_response(res)
+
+        elif path == "/api/jobs/bulk-select":
+            active = get_active_profile()
+            prof_id = active["id"] if active else 1
+            cat = data.get("category", "BEST_FIT")
+            sel = int(data.get("selected", 1))
+            count = bulk_toggle_job_sourcing(category=cat, selected=sel, profile_id=prof_id)
+            self.send_json_response({"success": True, "updated_count": count})
+
+        elif path == "/api/settings":
+            active = get_active_profile()
+            prof_id = active["id"] if active else 1
+            mode = data.get("sourcing_mode", "MANUAL")
+            limit = int(data.get("daily_hunter_limit", 2))
+            save_sourcing_settings(mode, limit, profile_id=prof_id)
+            updated = get_sourcing_settings(prof_id)
+            self.send_json_response({"success": True, "settings": updated})
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -238,12 +371,16 @@ class SideDoorDashboardHandler(SimpleHTTPRequestHandler):
         contacts = get_all_contacts(profile_id=profile_id)
         drafted = [c for c in contacts if c.get("outreach_status") == "DRAFTED"]
         sent = [c for c in contacts if c.get("outreach_status") == "SENT"]
+        job_metrics = get_today_scraped_jobs_count(profile_id=profile_id)
+        sourcing_settings = get_sourcing_settings(profile_id=profile_id)
         return {
             "total_companies": len(companies),
             "tier_1_companies": len([c for c in companies if c.get("priority_tier") == 1]),
             "total_contacts": len(contacts),
             "drafted_count": len(drafted),
-            "sent_count": len(sent)
+            "sent_count": len(sent),
+            "job_metrics": job_metrics,
+            "sourcing_settings": sourcing_settings
         }
 
     def serve_dashboard_html(self):

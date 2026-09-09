@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS companies (
     job_source_url TEXT,
     tech_stack TEXT,                          -- Concise list of key tools (e.g. PyTorch, SQL)
     key_news TEXT,                            -- Optional short summary + link
+    selected_for_sourcing INTEGER DEFAULT 0,  -- 1 if user selected this company for Hunter sourcing
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -64,7 +65,30 @@ CREATE TABLE IF NOT EXISTS profiles (
     hunter_api_key TEXT,
     sample_hiring_manager TEXT,
     sample_young_professional TEXT,
+    sourcing_mode TEXT DEFAULT 'MANUAL',      -- 'MANUAL' (User decides) or 'AUTO' (AI prioritized)
+    daily_hunter_limit INTEGER DEFAULT 2,     -- Max Hunter domain searches allowed per day
     is_configured INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Table 5: Daily Scraped Jobs (Local-first cache of all scraped roles)
+CREATE TABLE IF NOT EXISTS scraped_jobs (
+    id TEXT PRIMARY KEY,
+    profile_id INTEGER DEFAULT 1,             -- Scoped to profile/campaign
+    title TEXT NOT NULL,
+    company TEXT NOT NULL,
+    company_domain TEXT,
+    location TEXT,
+    url TEXT,
+    applicants INTEGER DEFAULT 0,
+    category TEXT DEFAULT 'BEST_FIT',         -- 'BEST_FIT', 'WORSE_FIT', 'EXCLUDE'
+    reason TEXT,
+    description TEXT,
+    selected_for_sourcing INTEGER DEFAULT 0,  -- 1 if user wants Hunter to source contacts
+    scraped_date TEXT DEFAULT (DATE('now')),   -- 'YYYY-MM-DD' for daily caching
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_scraped_jobs_date ON scraped_jobs(scraped_date);
+CREATE INDEX IF NOT EXISTS idx_scraped_jobs_cat ON scraped_jobs(category);
+CREATE INDEX IF NOT EXISTS idx_scraped_jobs_profile ON scraped_jobs(profile_id);

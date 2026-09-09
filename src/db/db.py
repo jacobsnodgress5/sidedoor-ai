@@ -34,7 +34,8 @@ def init_db():
             "strategic_score": "INTEGER DEFAULT 0",
             "employee_count": "INTEGER",
             "industry": "TEXT",
-            "profile_id": "INTEGER DEFAULT 1"
+            "profile_id": "INTEGER DEFAULT 1",
+            "selected_for_sourcing": "INTEGER DEFAULT 0"
         }
         for col_name, col_type in new_cols.items():
             if col_name not in existing_cols:
@@ -50,14 +51,53 @@ def init_db():
                 conn.execute("ALTER TABLE contacts ADD COLUMN profile_id INTEGER DEFAULT 1")
             except Exception:
                 pass
+
+        # Migrate sourcing_mode and daily_hunter_limit to profiles if not present
+        existing_prof_cols = [r[1] for r in conn.execute("PRAGMA table_info(profiles)").fetchall()]
+        if "sourcing_mode" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN sourcing_mode TEXT DEFAULT 'MANUAL'")
+            except Exception:
+                pass
+        if "daily_hunter_limit" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN daily_hunter_limit INTEGER DEFAULT 2")
+            except Exception:
+                pass
+        
+        # Ensure scraped_jobs table exists
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS scraped_jobs (
+                id TEXT PRIMARY KEY,
+                profile_id INTEGER DEFAULT 1,
+                title TEXT NOT NULL,
+                company TEXT NOT NULL,
+                company_domain TEXT,
+                location TEXT,
+                url TEXT,
+                applicants INTEGER DEFAULT 0,
+                category TEXT DEFAULT 'BEST_FIT',
+                reason TEXT,
+                description TEXT,
+                selected_for_sourcing INTEGER DEFAULT 0,
+                scraped_date TEXT DEFAULT (DATE('now')),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
         
         # Re-create indexes after columns exist
         conn.execute("CREATE INDEX IF NOT EXISTS idx_companies_track ON companies(track);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_companies_score ON companies(strategic_score);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_contacts_profile ON contacts(profile_id);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_scraped_jobs_date ON scraped_jobs(scraped_date);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_scraped_jobs_cat ON scraped_jobs(category);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_scraped_jobs_profile ON scraped_jobs(profile_id);")
 
         # Seed local user profile from message_examples.yaml if table is empty
         seed_initial_profile_if_empty(conn)
+
+        # Seed initial scraped jobs from reports if table is empty
+        seed_scraped_jobs_from_reports_if_empty(conn)
 
         conn.commit()
     finally:
@@ -606,5 +646,319 @@ def save_local_profile(data: Dict) -> Dict:
     active = get_active_profile()
     active_id = active["id"] if active else None
     return save_profile(data, profile_id=active_id)
+
+# -------------------------------------------------------------
+# Scraped Jobs Operations & Seed Logic
+# -------------------------------------------------------------
+
+def seed_scraped_jobs_from_reports_if_empty(conn: sqlite3.Connection):
+    """If scraped_jobs is empty, parse last_report.html and excluded_report.html to populate cache."""
+    try:
+        cur = conn.execute("SELECT COUNT(*) as cnt FROM scraped_jobs")
+        count = cur.fetchone()["cnt"]
+        if count > 0:
+            return
+
+        from bs4 import BeautifulSoup
+        import re
+
+        project_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        last_report = os.path.join(project_dir, "scraper", "last_report.html")
+        excluded_report = os.path.join(project_dir, "scraper", "excluded_report.html")
+
+        imported = 0
+
+        # Import curated jobs (Best Fit and Worse Fit)
+        if os.path.exists(last_report):
+            with open(last_report, "r", encoding="utf-8") as f:
+                soup = BeautifulSoup(f.read(), "html.parser")
+            
+            cards = soup.find_all("div", class_="job-card")
+            for c in cards:
+                title_a = c.find("div", class_="job-title").find("a") if c.find("div", class_="job-title") else None
+                if not title_a:
+                    continue
+                title = title_a.text.strip()
+                url = title_a.get("href", "")
+                
+                # Check category from parent section title
+                parent_section = c.find_parent("div", class_="section")
+                is_worse = parent_section and "worse" in str(parent_section.get("class", [])).lower()
+                category = "WORSE_FIT" if is_worse else "BEST_FIT"
+
+                meta = c.find("div", class_="job-meta")
+                meta_text = meta.text if meta else ""
+                company = meta.find("strong").text.strip() if (meta and meta.find("strong")) else "Unknown"
+                
+                parts = [p.strip() for p in meta_text.split("·") if p.strip()]
+                loc = parts[1] if len(parts) > 1 else "Remote"
+
+                from scraper.scraper import parse_applicant_count
+                applicants = parse_applicant_count(meta_text)
+
+                reason_p = c.find("p", class_="job-reason")
+                reason = reason_p.text.replace("Match Details:", "").strip() if reason_p else ""
+
+                m = re.search(r'/view/(\d+)', url)
+                job_id = m.group(1) if m else url
+
+                slug = re.sub(r'[^a-z0-9\-]', '', company.lower().replace(' ', ''))
+                domain = f"{slug}.com" if slug else "unknown.com"
+
+                conn.execute("""
+                    INSERT OR IGNORE INTO scraped_jobs (
+                        id, profile_id, title, company, company_domain, location, url,
+                        applicants, category, reason, description, selected_for_sourcing, scraped_date
+                    ) VALUES (?, 1, ?, ?, ?, ?, ?, ?, ?, ?, '', 0, DATE('now'))
+                """, (job_id, title, company, domain, loc, url, applicants, category, reason))
+                imported += 1
+
+        # Import excluded jobs
+        if os.path.exists(excluded_report):
+            with open(excluded_report, "r", encoding="utf-8") as f:
+                soup = BeautifulSoup(f.read(), "html.parser")
+            
+            cards = soup.find_all("div", class_="job-card")
+            for c in cards:
+                title_a = c.find("div", class_="job-title").find("a") if c.find("div", class_="job-title") else None
+                if not title_a:
+                    continue
+                title = title_a.text.strip()
+                url = title_a.get("href", "")
+                meta = c.find("div", class_="job-meta")
+                meta_text = meta.text if meta else ""
+                company = meta.find("strong").text.strip() if (meta and meta.find("strong")) else "Unknown"
+                
+                parts = [p.strip() for p in meta_text.split("·") if p.strip()]
+                loc = parts[1] if len(parts) > 1 else "On-site"
+
+                from scraper.scraper import parse_applicant_count
+                applicants = parse_applicant_count(meta_text)
+
+                reason_p = c.find("p", class_="exclusion-reason")
+                reason = reason_p.text.replace("Exclusion Reason:", "").strip() if reason_p else ""
+
+                m = re.search(r'/view/(\d+)', url)
+                job_id = m.group(1) if m else url
+
+                slug = re.sub(r'[^a-z0-9\-]', '', company.lower().replace(' ', ''))
+                domain = f"{slug}.com" if slug else "unknown.com"
+
+                conn.execute("""
+                    INSERT OR IGNORE INTO scraped_jobs (
+                        id, profile_id, title, company, company_domain, location, url,
+                        applicants, category, reason, description, selected_for_sourcing, scraped_date
+                    ) VALUES (?, 1, ?, ?, ?, ?, ?, ?, 'EXCLUDE', ?, '', 0, DATE('now'))
+                """, (job_id, title, company, domain, loc, url, applicants, reason))
+                imported += 1
+
+        if imported > 0:
+            print(f"[SideDoor DB] Automatically seeded {imported} historical jobs into scraped_jobs cache.")
+    except Exception as e:
+        print(f"[SideDoor DB] Notice: could not seed from report html files: {e}")
+
+def upsert_scraped_job(
+    job_id: str,
+    title: str,
+    company: str,
+    company_domain: str,
+    location: str,
+    url: str,
+    applicants: int,
+    category: str,
+    reason: str,
+    description: str = "",
+    selected_for_sourcing: int = 0,
+    profile_id: int = 1
+):
+    """Insert or update a scraped job in the daily cache."""
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT INTO scraped_jobs (
+                id, profile_id, title, company, company_domain, location, url,
+                applicants, category, reason, description, selected_for_sourcing, scraped_date
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, DATE('now'))
+            ON CONFLICT(id) DO UPDATE SET
+                title = excluded.title,
+                company = excluded.company,
+                company_domain = excluded.company_domain,
+                location = excluded.location,
+                url = excluded.url,
+                applicants = excluded.applicants,
+                category = excluded.category,
+                reason = excluded.reason,
+                description = CASE WHEN excluded.description != '' THEN excluded.description ELSE scraped_jobs.description END,
+                profile_id = excluded.profile_id
+        """, (
+            job_id, profile_id, title, company, company_domain, location, url,
+            applicants, category, reason, description, selected_for_sourcing
+        ))
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_scraped_jobs(
+    profile_id: Optional[int] = None,
+    date_filter: Optional[str] = None,
+    category: Optional[str] = None
+) -> List[Dict]:
+    """Retrieve scraped jobs with optional filters."""
+    conn = get_db_connection()
+    try:
+        query = "SELECT * FROM scraped_jobs WHERE 1=1"
+        params = []
+        if profile_id:
+            query += " AND profile_id = ?"
+            params.append(profile_id)
+        if date_filter:
+            query += " AND scraped_date = ?"
+            params.append(date_filter)
+        if category and category != "ALL":
+            query += " AND category = ?"
+            params.append(category)
+        query += " ORDER BY CASE category WHEN 'BEST_FIT' THEN 1 WHEN 'WORSE_FIT' THEN 2 ELSE 3 END, applicants ASC, created_at DESC"
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+def toggle_job_sourcing(job_id: str, selected: Optional[int] = None) -> Dict:
+    """Toggle or set whether a job/company is selected for Hunter sourcing."""
+    conn = get_db_connection()
+    try:
+        row = conn.execute("SELECT * FROM scraped_jobs WHERE id = ?", (job_id,)).fetchone()
+        if not row:
+            return {"success": False, "error": "Job not found"}
+        
+        current = row["selected_for_sourcing"]
+        new_val = (1 if selected else 0) if selected is not None else (0 if current else 1)
+        domain = row["company_domain"]
+        
+        conn.execute("UPDATE scraped_jobs SET selected_for_sourcing = ? WHERE id = ?", (new_val, job_id))
+        if domain:
+            conn.execute("UPDATE companies SET selected_for_sourcing = ? WHERE domain = ?", (new_val, domain))
+        conn.commit()
+        return {"success": True, "job_id": job_id, "selected": new_val, "company_domain": domain}
+    finally:
+        conn.close()
+
+def bulk_toggle_job_sourcing(category: str = "BEST_FIT", selected: int = 1, profile_id: Optional[int] = None) -> int:
+    """Bulk select or deselect jobs by category for Hunter sourcing."""
+    conn = get_db_connection()
+    try:
+        query = "UPDATE scraped_jobs SET selected_for_sourcing = ? WHERE category = ?"
+        params = [selected, category]
+        if profile_id:
+            query += " AND profile_id = ?"
+            params.append(profile_id)
+        cursor = conn.execute(query, params)
+        # Also update corresponding companies
+        conn.execute("""
+            UPDATE companies SET selected_for_sourcing = ?
+            WHERE domain IN (SELECT company_domain FROM scraped_jobs WHERE selected_for_sourcing = ?)
+        """, (selected, selected))
+        conn.commit()
+        return cursor.rowcount
+    finally:
+        conn.close()
+
+def get_today_scraped_jobs_count(profile_id: Optional[int] = None) -> Dict:
+    """Get metrics about today's scraped jobs."""
+    conn = get_db_connection()
+    try:
+        row = conn.execute("""
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN category = 'BEST_FIT' THEN 1 ELSE 0 END) as best_fit,
+                SUM(CASE WHEN category = 'WORSE_FIT' THEN 1 ELSE 0 END) as worse_fit,
+                SUM(CASE WHEN category = 'EXCLUDE' THEN 1 ELSE 0 END) as excluded,
+                SUM(CASE WHEN selected_for_sourcing = 1 THEN 1 ELSE 0 END) as selected
+            FROM scraped_jobs 
+            WHERE scraped_date = DATE('now')
+        """).fetchone()
+
+        all_time = conn.execute("SELECT COUNT(*) as total FROM scraped_jobs").fetchone()
+        
+        return {
+            "total_today": row["total"] or 0,
+            "best_fit_today": row["best_fit"] or 0,
+            "worse_fit_today": row["worse_fit"] or 0,
+            "excluded_today": row["excluded"] or 0,
+            "selected_today": row["selected"] or 0,
+            "total_all_time": all_time["total"] or 0,
+            "has_scraped_today": bool(row["total"] and row["total"] > 0)
+        }
+    finally:
+        conn.close()
+
+def get_sourcing_settings(profile_id: Optional[int] = None) -> Dict:
+    """Retrieve sourcing mode ('MANUAL' vs 'AUTO') and credit limits."""
+    conn = get_db_connection()
+    try:
+        prof = None
+        if profile_id:
+            row = conn.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,)).fetchone()
+            prof = dict(row) if row else None
+        if not prof:
+            row = conn.execute("SELECT * FROM profiles WHERE is_active = 1").fetchone()
+            prof = dict(row) if row else None
+        
+        mode = prof.get("sourcing_mode", "MANUAL") if prof else "MANUAL"
+        daily_limit = prof.get("daily_hunter_limit", 2) if prof else 2
+        today_hunter_credits = get_daily_api_usage("HUNTER")
+        
+        monthly_row = conn.execute(
+            "SELECT COALESCE(SUM(credits_used), 0) as total FROM api_usage_log WHERE api_name = 'HUNTER' AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')"
+        ).fetchone()
+        monthly_hunter_credits = monthly_row["total"] if monthly_row else 0
+
+        return {
+            "sourcing_mode": mode or "MANUAL",
+            "daily_hunter_limit": daily_limit or 2,
+            "today_hunter_used": today_hunter_credits,
+            "monthly_hunter_used": monthly_hunter_credits,
+            "monthly_quota_estimate": 25,
+            "credits_remaining_today": max(0, (daily_limit or 2) - today_hunter_credits),
+            "credits_remaining_month": max(0, 25 - monthly_hunter_credits)
+        }
+    finally:
+        conn.close()
+
+def save_sourcing_settings(sourcing_mode: str, daily_hunter_limit: int, profile_id: Optional[int] = None):
+    """Save sourcing mode and daily limit to profile."""
+    conn = get_db_connection()
+    try:
+        target_id = profile_id
+        if not target_id:
+            act = conn.execute("SELECT id FROM profiles WHERE is_active = 1").fetchone()
+            target_id = act["id"] if act else 1
+        conn.execute(
+            "UPDATE profiles SET sourcing_mode = ?, daily_hunter_limit = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (sourcing_mode, daily_hunter_limit, target_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_selected_companies_for_sourcing(profile_id: Optional[int] = None) -> List[Dict]:
+    """Retrieve companies explicitly selected by the user for Hunter sourcing."""
+    conn = get_db_connection()
+    try:
+        query = """
+            SELECT DISTINCT c.* FROM companies c
+            JOIN scraped_jobs j ON c.domain = j.company_domain
+            WHERE j.selected_for_sourcing = 1
+        """
+        params = []
+        if profile_id:
+            query += " AND (c.profile_id = ? OR j.profile_id = ?)"
+            params.extend([profile_id, profile_id])
+        query += " ORDER BY c.priority_tier ASC, c.strategic_score DESC"
+        rows = conn.execute(query, params).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
 
 

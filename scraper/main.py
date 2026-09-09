@@ -17,9 +17,14 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-from scraper import scrape_jobs
-from filter import evaluate_all_jobs
-from notifier import send_email
+try:
+    from scraper.scraper import scrape_jobs
+    from scraper.filter import evaluate_all_jobs
+    from scraper.notifier import send_email
+except (ImportError, ModuleNotFoundError):
+    from scraper import scrape_jobs
+    from filter import evaluate_all_jobs
+    from notifier import send_email
 
 def load_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
@@ -109,10 +114,10 @@ def main():
     else:
         print("[System] Email sending failed. (Check last_report.html for local results).")
 
-    # 6. Hook: Ingest companies into NetWeave networking database & Generate Daily Allocation
-    print("\n[System] Step 4: Ingesting companies & Generating Daily Outreach Drafts...")
+    # 6. Hook: Ingest companies and jobs into SideDoor AI database
+    print("\n[System] Step 4: Caching jobs & companies in SideDoor AI database...")
     if update_overlay:
-        update_overlay(90.0, "NetWeave AI: Ingesting & Drafting Outreach...", "Generating 15 daily drafts...")
+        update_overlay(90.0, "SideDoor AI: Caching jobs in Daily Jobs...", "Saving jobs to database...")
     # Project root is the parent directory (when inside repo/scraper/)
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     if not os.path.exists(os.path.join(project_root, "src")):
@@ -122,21 +127,17 @@ def main():
         if project_root not in sys.path:
             sys.path.insert(0, project_root)
         from src.ingest_companies import ingest_scraped_jobs
-        from src.allocation_engine import run_daily_allocation
         
         ingest_res = ingest_scraped_jobs(raw_jobs)
-        print(f"[System] NetWeave Ingestion complete: {ingest_res['total_companies']} companies cached.")
-
-        print("[System] Running daily allocation (15 drafts: 2 Apollo, 5 Hunter, 8 LinkedIn)...")
-        alloc_res = run_daily_allocation(15)
-        print(f"[System] Allocation complete: {alloc_res['total_drafted']} drafts ready.")
+        print(f"[System] SideDoor Ingestion complete: {ingest_res.get('total_jobs', len(raw_jobs))} jobs ({ingest_res['total_companies']} companies) cached.")
+        print("[System] Jobs are ready for review! Visit the Daily Jobs tab to select companies for contact sourcing.")
     except Exception as ing_err:
-        print(f"[Warning] NetWeave ingestion/allocation encountered notice: {ing_err}")
+        print(f"[Warning] SideDoor ingestion encountered notice: {ing_err}")
 
     # 7. Hook: Launch dashboard server if needed & open browser
-    print("\n[System] Step 5: Launching NetWeave AI Web Dashboard...")
+    print("\n[System] Step 5: Launching SideDoor AI Web Dashboard...")
     if update_overlay:
-        update_overlay(100.0, "Opening NetWeave AI Dashboard...", "Complete!")
+        update_overlay(100.0, "Opening SideDoor AI Dashboard...", "Complete!")
         import time; time.sleep(1)
         close_overlay()
     try:

@@ -31,6 +31,12 @@
             color: #16a34a;
             font-weight: 600;
         }
+        .pill-active {
+            background-color: #f0fdf4 !important;
+            color: #15803d !important;
+            border: 1px solid #86efac !important;
+            font-weight: 700 !important;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
@@ -49,16 +55,20 @@
             </div>
 
             <!-- Stats Bar -->
-            <div class="flex items-center space-x-6 text-sm">
-                <div class="flex items-center space-x-2">
+            <div class="flex items-center space-x-5 text-sm">
+                <div class="flex items-center space-x-1.5" title="Daily Hunter.io credit searches used">
+                    <span class="text-slate-500 font-medium">Hunter Searches:</span>
+                    <span id="stat-hunter" class="font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded text-xs">0/2</span>
+                </div>
+                <div class="flex items-center space-x-1.5">
                     <span class="text-slate-500 font-medium">Companies:</span>
                     <span id="stat-companies" class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">0</span>
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-1.5">
                     <span class="text-slate-500 font-medium">Pending Review:</span>
                     <span id="stat-drafts" class="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-xs">0</span>
                 </div>
-                <div class="flex items-center space-x-2">
+                <div class="flex items-center space-x-1.5">
                     <span class="text-slate-500 font-medium">Sent:</span>
                     <span id="stat-sent" class="font-bold text-brand-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs">0</span>
                 </div>
@@ -103,6 +113,11 @@
                 <i class="fa-solid fa-inbox"></i>
                 <span>Daily Outreach Review</span>
             </button>
+            <button onclick="switchTab('jobs')" id="tab-btn-jobs" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
+                <i class="fa-solid fa-briefcase"></i>
+                <span>Daily Jobs</span>
+                <span id="badge-jobs-count" class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">0</span>
+            </button>
             <button onclick="switchTab('companies')" id="tab-btn-companies" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
                 <i class="fa-solid fa-building"></i>
                 <span>Companies Explorer</span>
@@ -119,6 +134,9 @@
 
         <!-- Tab 1: Daily Outreach Review -->
         <section id="tab-review" class="space-y-6">
+            <!-- Dynamic Daily Pipeline Alert Banner (if scraper not run or 0 companies selected) -->
+            <div id="daily-pipeline-banner" class="space-y-3"></div>
+
             <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                 <div>
                     <h2 class="text-base font-bold text-slate-900">Today's Outreach Pipeline</h2>
@@ -144,6 +162,160 @@
                 <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
                 <h3 class="text-sm font-semibold text-slate-700">No Drafted Contacts Found</h3>
                 <p class="text-xs text-slate-400 mt-1">Run the job scraper or click 'Run Allocation' to populate today's batch.</p>
+            </div>
+        </section>
+
+        <!-- Tab: Daily Jobs & Company Sourcing -->
+        <section id="tab-jobs" class="hidden space-y-6">
+            <!-- Header Bar -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-8 h-8 rounded-lg bg-emerald-100 text-brand-700 flex items-center justify-center font-bold text-sm">
+                            <i class="fa-solid fa-briefcase"></i>
+                        </span>
+                        <div>
+                            <h2 class="text-base font-bold text-slate-900">Daily Scraped Jobs & Sourcing</h2>
+                            <p class="text-xs text-slate-500">Discover and select which companies to search contacts for via Hunter.io.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 w-full md:w-auto">
+                    <button onclick="triggerScraperRun()" id="btn-run-scraper" class="w-full md:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm flex items-center justify-center space-x-2 transition">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <span>Run Scraper Now</span>
+                    </button>
+                    <button onclick="loadJobs()" class="p-2 text-slate-500 hover:text-slate-800 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition" title="Refresh job postings">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scraper Live Progress HUD (visible when running) -->
+            <div id="scraper-hud" class="hidden bg-slate-900 text-white p-4 rounded-xl shadow-lg border border-slate-800 space-y-3 animate-in fade-in duration-150">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid fa-circle-notch fa-spin text-emerald-400 text-lg"></i>
+                        <div>
+                            <p class="text-xs font-bold text-emerald-400 uppercase tracking-wider">LinkedIn Scraper Running in Background</p>
+                            <p id="scraper-hud-msg" class="text-xs text-slate-300 font-mono mt-0.5">Initializing Playwright browser session...</p>
+                        </div>
+                    </div>
+                    <span id="scraper-hud-timer" class="text-xs font-mono bg-slate-800 px-2 py-1 rounded text-slate-400">0s</span>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div id="scraper-progress-bar" class="bg-emerald-500 h-full w-1/3 animate-pulse"></div>
+                </div>
+                <div class="text-[11px] text-slate-400 flex justify-between items-center pt-1">
+                    <span>You can continue browsing or reviewing messages while this runs.</span>
+                    <button onclick="toggleScraperTerminal()" class="text-emerald-400 hover:underline font-mono text-[11px]">Toggle Logs</button>
+                </div>
+                <!-- Collapsible terminal output -->
+                <div id="scraper-terminal-drawer" class="hidden max-h-36 overflow-y-auto bg-black/60 p-2.5 rounded font-mono text-[11px] text-slate-300 space-y-0.5 border border-slate-800">
+                    <!-- Streamed log lines -->
+                </div>
+            </div>
+
+            <!-- Sourcing Mode & Credit Monitor Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Sourcing Mode Setting Card -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm md:col-span-2 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-sliders text-brand-600 text-sm"></i>
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Hunter Sourcing Mode</span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <label for="select-sourcing-mode" class="text-xs text-slate-500 font-medium">Mode:</label>
+                            <select id="select-sourcing-mode" onchange="onSourcingModeChange(this.value)" class="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-brand-500">
+                                <option value="MANUAL">Manual Selection (Default)</option>
+                                <option value="AUTO">Automatic (AI Top Ranked)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs text-slate-600 flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 text-xs shrink-0"></i>
+                        <span id="sourcing-mode-explanation">
+                            <strong>Manual Selection (Default):</strong> You decide exactly which companies Hunter sources contacts for using the checkboxes below. Switch to <strong>Automatic</strong> to let SideDoor auto-prioritize the top-ranked companies.
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Daily Hunter Credit Widget Card -->
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <i class="fa-solid fa-shield-halved text-sky-600 text-sm"></i>
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Hunter Credit Monitor</span>
+                        </div>
+                        <button onclick="editDailyHunterLimit()" class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold" title="Adjust daily search limit">
+                            <i class="fa-solid fa-pen-to-square mr-0.5"></i> Edit Limit
+                        </button>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="text-slate-600 font-medium">Searches Today:</span>
+                            <span id="hunter-daily-usage-text" class="font-bold text-sky-700">0 / 2 Used</span>
+                        </div>
+                        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                            <div id="hunter-daily-progress" class="bg-sky-500 h-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-slate-500 pt-1 border-t border-slate-100">
+                        <span>Monthly: <strong id="hunter-monthly-usage-text" class="text-slate-700">0 / 25</strong></span>
+                        <span id="hunter-remaining-today-badge" class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">2 left today</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters & Quick Actions Bar -->
+            <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+                <!-- Filter Pills -->
+                <div class="flex items-center space-x-1.5 overflow-x-auto w-full sm:w-auto" id="category-pills">
+                    <button onclick="filterJobsCategory('ALL')" id="pill-ALL" class="pill-active px-3 py-1 text-xs rounded-lg font-semibold transition">
+                        All (<span id="count-pill-all">0</span>)
+                    </button>
+                    <button onclick="filterJobsCategory('BEST_FIT')" id="pill-BEST_FIT" class="px-3 py-1 text-xs rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition flex items-center space-x-1">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Best Fit (<span id="count-pill-best">0</span>)</span>
+                    </button>
+                    <button onclick="filterJobsCategory('WORSE_FIT')" id="pill-WORSE_FIT" class="px-3 py-1 text-xs rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition flex items-center space-x-1">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        <span>Worse Fit (<span id="count-pill-worse">0</span>)</span>
+                    </button>
+                    <button onclick="filterJobsCategory('EXCLUDE')" id="pill-EXCLUDE" class="px-3 py-1 text-xs rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition flex items-center space-x-1">
+                        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                        <span>Excluded (<span id="count-pill-exclude">0</span>)</span>
+                    </button>
+                </div>
+
+                <!-- Quick Actions & Search -->
+                <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                    <div class="relative flex-1 sm:w-48">
+                        <input type="text" id="jobs-search-input" oninput="onJobsSearch(this.value)" placeholder="Search role or company..." class="w-full text-xs pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-slate-50">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-[11px] text-slate-400"></i>
+                    </div>
+                    <button onclick="bulkSelectBestFit(1)" class="whitespace-nowrap px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-brand-700 border border-emerald-200 text-xs font-semibold rounded-lg flex items-center space-x-1 transition" title="Select all Best Fit jobs for Hunter sourcing">
+                        <i class="fa-solid fa-check-double text-[11px]"></i>
+                        <span>Select All Best Fit</span>
+                    </button>
+                    <button onclick="bulkSelectBestFit(0)" class="whitespace-nowrap px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-lg transition" title="Clear selections">
+                        <span>Clear</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Jobs Grid -->
+            <div id="jobs-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dynamically injected job cards -->
+            </div>
+
+            <!-- Empty State for Jobs -->
+            <div id="no-jobs-msg" class="hidden text-center py-16 bg-white rounded-xl border border-slate-200">
+                <i class="fa-solid fa-briefcase text-4xl text-slate-300 mb-3"></i>
+                <h3 class="text-sm font-semibold text-slate-700">No Job Postings Found</h3>
+                <p class="text-xs text-slate-400 mt-1">Click 'Run Scraper Now' to scrape and filter the latest LinkedIn jobs.</p>
             </div>
         </section>
 
@@ -424,16 +596,169 @@
     <script>
         let allContacts = [];
         let allCompanies = [];
+        let allJobs = [];
+        let currentJobsCategory = 'ALL';
+        let currentJobsSearch = '';
+        let sourcingSettings = { sourcing_mode: 'MANUAL', daily_hunter_limit: 2, today_hunter_used: 0 };
+        let scraperPollingInterval = null;
+        let scraperSecondsElapsed = 0;
+        let scraperTimerInterval = null;
 
         async function fetchStats() {
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                document.getElementById('stat-companies').innerText = data.total_companies;
-                document.getElementById('stat-drafts').innerText = data.drafted_count;
-                document.getElementById('stat-sent').innerText = data.sent_count;
+                document.getElementById('stat-companies').innerText = data.total_companies || 0;
+                document.getElementById('stat-drafts').innerText = data.drafted_count || 0;
+                document.getElementById('stat-sent').innerText = data.sent_count || 0;
+
+                if (data.job_metrics) {
+                    const jm = data.job_metrics;
+                    const badge = document.getElementById('badge-jobs-count');
+                    if (badge) {
+                        badge.innerText = jm.total_today || jm.total_all_time || 0;
+                    }
+                    const countAll = document.getElementById('count-pill-all');
+                    if (countAll) countAll.innerText = jm.total_today || jm.total_all_time || 0;
+                    const countBest = document.getElementById('count-pill-best');
+                    if (countBest) countBest.innerText = jm.best_fit_today || 0;
+                    const countWorse = document.getElementById('count-pill-worse');
+                    if (countWorse) countWorse.innerText = jm.worse_fit_today || 0;
+                    const countExclude = document.getElementById('count-pill-exclude');
+                    if (countExclude) countExclude.innerText = jm.excluded_today || 0;
+                }
+
+                if (data.sourcing_settings) {
+                    sourcingSettings = data.sourcing_settings;
+                    const mode = sourcingSettings.sourcing_mode || 'MANUAL';
+                    const used = sourcingSettings.today_hunter_used || 0;
+                    const limit = sourcingSettings.daily_hunter_limit || 2;
+                    const monthUsed = sourcingSettings.monthly_hunter_used || 0;
+                    const monthQuota = sourcingSettings.monthly_quota_estimate || 25;
+
+                    // Update top bar stat
+                    const statHunter = document.getElementById('stat-hunter');
+                    if (statHunter) statHunter.innerText = `${used}/${limit}`;
+
+                    // Update widget in Daily Jobs
+                    const dailyText = document.getElementById('hunter-daily-usage-text');
+                    if (dailyText) dailyText.innerText = `${used} / ${limit} Used`;
+
+                    const progressBar = document.getElementById('hunter-daily-progress');
+                    if (progressBar) {
+                        const pct = Math.min(100, Math.round((used / limit) * 100));
+                        progressBar.style.width = `${pct}%`;
+                        progressBar.className = pct >= 100 ? 'bg-amber-500 h-full transition-all duration-300' : 'bg-sky-500 h-full transition-all duration-300';
+                    }
+
+                    const monthlyText = document.getElementById('hunter-monthly-usage-text');
+                    if (monthlyText) monthlyText.innerText = `${monthUsed} / ${monthQuota}`;
+
+                    const remainBadge = document.getElementById('hunter-remaining-today-badge');
+                    if (remainBadge) {
+                        const left = Math.max(0, limit - used);
+                        remainBadge.innerText = `${left} left today`;
+                        remainBadge.className = left === 0 
+                            ? 'px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold text-[10px]'
+                            : 'px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]';
+                    }
+
+                    // Update mode dropdown
+                    const selMode = document.getElementById('select-sourcing-mode');
+                    if (selMode && selMode.value !== mode) selMode.value = mode;
+
+                    updateSourcingExplanation(mode);
+                }
+
+                updatePipelineBanner(data);
             } catch (e) {
                 console.error("Failed to load stats", e);
+            }
+        }
+
+        function updatePipelineBanner(data) {
+            const banner = document.getElementById('daily-pipeline-banner');
+            if (!banner) return;
+
+            const jm = data.job_metrics || {};
+            const ss = data.sourcing_settings || {};
+            const draftsCount = data.drafted_count || 0;
+
+            let html = '';
+
+            // 1. Check if today's scraper has run
+            if (!jm.has_scraped_today && jm.total_all_time === 0) {
+                html += `
+                <div class="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-cloud-arrow-down text-sm"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-amber-900 leading-tight">No Jobs Scraped For Today Yet</h3>
+                            <p class="text-xs text-amber-700 mt-0.5">SideDoor works best when fed fresh LinkedIn openings. Run the scraper to discover active roles and populate candidates.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0 w-full sm:w-auto">
+                        <button onclick="triggerScraperRun()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow-sm flex items-center space-x-1.5 transition">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <span>Run Scraper Now</span>
+                        </button>
+                    </div>
+                </div>`;
+            } else if (!jm.has_scraped_today && jm.total_all_time > 0) {
+                html += `
+                <div class="bg-gradient-to-r from-slate-50 to-emerald-50 border border-slate-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm text-xs">
+                    <div class="flex items-center space-x-2.5 text-slate-700">
+                        <i class="fa-solid fa-circle-check text-emerald-500 text-base"></i>
+                        <span>Using <strong>${jm.total_all_time} cached jobs</strong> from previous scrape. You can run fresh scrape anytime or proceed with outreach.</span>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button onclick="switchTab('jobs')" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-semibold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1">
+                            <i class="fa-solid fa-briefcase text-xs text-slate-400"></i>
+                            <span>View Daily Jobs</span>
+                        </button>
+                        <button onclick="triggerScraperRun()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1">
+                            <i class="fa-solid fa-rotate text-xs"></i>
+                            <span>Scrape Today's Jobs</span>
+                        </button>
+                    </div>
+                </div>`;
+            }
+
+            // 2. Check if in manual mode with 0 companies selected
+            if (ss.sourcing_mode === 'MANUAL' && (jm.selected_today === 0 || !jm.selected_today) && draftsCount === 0) {
+                html += `
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm text-xs">
+                    <div class="flex items-start space-x-2.5 text-sky-900">
+                        <i class="fa-solid fa-hand-pointer text-sky-600 text-base mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Manual Selection Mode Active:</span>
+                            <span class="text-sky-800"> No companies are currently selected for Hunter contact sourcing. Choose companies in the Daily Jobs tab before running allocation.</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 shrink-0">
+                        <button onclick="switchTab('jobs')" class="bg-sky-600 hover:bg-sky-700 text-white font-semibold px-3 py-1.5 rounded-lg shadow-sm transition flex items-center space-x-1">
+                            <i class="fa-solid fa-check-double text-xs"></i>
+                            <span>Select Companies in Daily Jobs</span>
+                        </button>
+                        <button onclick="onSourcingModeChange('AUTO')" class="bg-white hover:bg-sky-100 text-sky-700 border border-sky-300 font-semibold px-3 py-1.5 rounded-lg transition" title="Let AI auto-pick top companies">
+                            <span>Switch to Auto</span>
+                        </button>
+                    </div>
+                </div>`;
+            }
+
+            banner.innerHTML = html;
+        }
+
+        function updateSourcingExplanation(mode) {
+            const exp = document.getElementById('sourcing-mode-explanation');
+            if (!exp) return;
+            if (mode === 'AUTO') {
+                exp.innerHTML = `<strong>Automatic Mode:</strong> SideDoor auto-prioritizes Track 1 roles (&lt;80 applicants) and top-scored Track 2 target companies up to your daily credit limit. Switch to <strong>Manual Selection</strong> if you prefer hand-picking specific companies.`;
+            } else {
+                exp.innerHTML = `<strong>Manual Selection (Default):</strong> You decide exactly which companies Hunter sources contacts for using the checkboxes below. Switch to <strong>Automatic</strong> to let SideDoor auto-prioritize the top-ranked companies.`;
             }
         }
 
@@ -621,10 +946,16 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    if (data.result.message) {
-                        showToast(data.result.message);
+                    const r = data.result;
+                    if (r.status === 'NO_COMPANIES_SELECTED') {
+                        showToast("Manual Mode: Please check companies on the Daily Jobs page first!");
+                        switchTab('jobs');
+                    } else if (r.status === 'DAILY_LIMIT_HOLD') {
+                        showToast(r.message || "Daily Hunter limit reached. Preserving today's prospects.");
+                    } else if (r.message) {
+                        showToast(r.message);
                     } else {
-                        showToast(`Generated ${data.result.total_drafted} new outreach drafts!`);
+                        showToast(`Generated ${r.total_drafted} new outreach drafts!`);
                     }
                 } else {
                     showToast(`Error: ${data.error}`);
@@ -1051,15 +1382,350 @@
             }
         }
 
+        async function loadJobs(category = currentJobsCategory, search = currentJobsSearch) {
+            currentJobsCategory = category;
+            currentJobsSearch = search;
+            try {
+                const url = category && category !== 'ALL' ? `/api/jobs?category=${category}` : '/api/jobs';
+                const res = await fetch(url);
+                const data = await res.json();
+                allJobs = data.jobs || [];
+                renderJobsList(allJobs, search);
+                
+                // Update pill active styles
+                ['ALL', 'BEST_FIT', 'WORSE_FIT', 'EXCLUDE'].forEach(c => {
+                    const pill = document.getElementById(`pill-${c}`);
+                    if (pill) {
+                        if (c === category) {
+                            pill.className = "pill-active px-3 py-1 text-xs rounded-lg font-semibold transition";
+                        } else {
+                            pill.className = "px-3 py-1 text-xs rounded-lg font-medium text-slate-600 hover:bg-slate-100 transition";
+                        }
+                    }
+                });
+
+                if (data.metrics) {
+                    const countAll = document.getElementById('count-pill-all');
+                    if (countAll) countAll.innerText = data.metrics.total_today || data.metrics.total_all_time || 0;
+                    const countBest = document.getElementById('count-pill-best');
+                    if (countBest) countBest.innerText = data.metrics.best_fit_today || 0;
+                    const countWorse = document.getElementById('count-pill-worse');
+                    if (countWorse) countWorse.innerText = data.metrics.worse_fit_today || 0;
+                    const countExclude = document.getElementById('count-pill-exclude');
+                    if (countExclude) countExclude.innerText = data.metrics.excluded_today || 0;
+                    const badge = document.getElementById('badge-jobs-count');
+                    if (badge) badge.innerText = data.metrics.total_today || data.metrics.total_all_time || 0;
+                }
+            } catch (err) {
+                console.error("Failed to load jobs", err);
+            }
+        }
+
+        function renderJobsList(jobs, search = '') {
+            const grid = document.getElementById('jobs-grid');
+            const emptyMsg = document.getElementById('no-jobs-msg');
+            grid.innerHTML = '';
+
+            let filtered = jobs;
+            if (search && search.trim()) {
+                const s = search.toLowerCase();
+                filtered = filtered.filter(j => 
+                    (j.title && j.title.toLowerCase().includes(s)) ||
+                    (j.company && j.company.toLowerCase().includes(s)) ||
+                    (j.location && j.location.toLowerCase().includes(s))
+                );
+            }
+
+            if (!filtered || filtered.length === 0) {
+                emptyMsg.classList.remove('hidden');
+                return;
+            }
+            emptyMsg.classList.add('hidden');
+
+            filtered.forEach(j => {
+                const isBest = j.category === 'BEST_FIT';
+                const isWorse = j.category === 'WORSE_FIT';
+                const isExclude = j.category === 'EXCLUDE';
+
+                let fitBadge = '';
+                if (isBest) {
+                    fitBadge = `<span class="bg-emerald-50 text-brand-700 border border-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center"><i class="fa-solid fa-circle-check text-emerald-500 mr-1 text-[10px]"></i> Best Fit</span>`;
+                } else if (isWorse) {
+                    fitBadge = `<span class="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-semibold px-2 py-0.5 rounded-full flex items-center"><i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1 text-[10px]"></i> Worse Fit / Stretch</span>`;
+                } else {
+                    fitBadge = `<span class="bg-slate-100 text-slate-500 border border-slate-200 text-[11px] font-medium px-2 py-0.5 rounded-full flex items-center"><i class="fa-solid fa-ban text-slate-400 mr-1 text-[10px]"></i> Excluded</span>`;
+                }
+
+                const apps = parseInt(j.applicants, 10) || 0;
+                const appsBadge = apps > 0 && apps < 80
+                    ? `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold px-2 py-0.5 rounded text-xs" title="Track 1: &lt;80 applicants - high response probability"><i class="fa-solid fa-fire text-amber-500 mr-1"></i>${apps} applicants</span>`
+                    : `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">${apps > 0 ? `${apps} applicants` : '0 applicants'}</span>`;
+
+                const isSelected = Boolean(j.selected_for_sourcing);
+
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-xl border ${isSelected ? 'border-brand-500 ring-2 ring-brand-500/10' : 'border-slate-200'} p-4 shadow-sm hover:shadow-md transition flex flex-col justify-between space-y-3`;
+                card.id = `job-card-${j.id}`;
+
+                card.innerHTML = `
+                    <div class="space-y-2.5">
+                        <!-- Top Bar: Sourcing Checkbox & Fit Badge -->
+                        <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                            <label class="flex items-center space-x-2 cursor-pointer select-none">
+                                <input type="checkbox" id="job-chk-${j.id}" onchange="toggleJobSourcing('${j.id}', this.checked)" ${isSelected ? 'checked' : ''} class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300">
+                                <span class="text-xs font-bold ${isSelected ? 'text-brand-700' : 'text-slate-700'}">Source with Hunter</span>
+                            </label>
+                            ${fitBadge}
+                        </div>
+
+                        <!-- Job Title & Company -->
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 leading-snug hover:text-brand-700 transition">${escapeHtml(j.title)}</h3>
+                            <div class="flex items-center space-x-2 mt-1 text-xs text-slate-600">
+                                <span class="font-semibold text-slate-800">${escapeHtml(j.company)}</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-slate-500 flex items-center"><i class="fa-solid fa-location-dot mr-1 text-slate-400 text-[11px]"></i>${escapeHtml(j.location || 'Location not specified')}</span>
+                            </div>
+                        </div>
+
+                        <!-- Applicant count badge -->
+                        <div class="flex items-center space-x-2 pt-1">
+                            ${appsBadge}
+                            <span class="text-[11px] text-slate-400">Scraped: ${escapeHtml(j.scraped_date || 'Today')}</span>
+                        </div>
+
+                        <!-- Reason / Match explanation -->
+                        ${j.reason ? `
+                        <div class="bg-slate-50 border border-slate-200/70 rounded-lg p-2.5 text-xs text-slate-600 leading-relaxed">
+                            <strong class="text-slate-700 font-semibold">Match Details:</strong> ${escapeHtml(j.reason)}
+                        </div>` : ''}
+                    </div>
+
+                    <!-- Footer: View Link -->
+                    <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-xs">
+                        <span class="text-[11px] text-slate-400 font-mono">${escapeHtml(j.company_domain || '')}</span>
+                        ${j.url ? `
+                        <a href="${j.url}" target="_blank" rel="noopener noreferrer" class="text-brand-600 hover:text-brand-800 font-semibold flex items-center space-x-1 hover:underline">
+                            <span>View on LinkedIn</span>
+                            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                        </a>` : '<span class="text-slate-400 text-xs">No link available</span>'}
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterJobsCategory(cat) {
+            loadJobs(cat, currentJobsSearch);
+        }
+
+        function onJobsSearch(val) {
+            currentJobsSearch = val;
+            renderJobsList(allJobs, val);
+        }
+
+        async function toggleJobSourcing(jobId, isChecked) {
+            try {
+                const res = await fetch('/api/jobs/toggle-sourcing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ job_id: jobId, selected: isChecked ? 1 : 0 })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const card = document.getElementById(`job-card-${jobId}`);
+                    if (card) {
+                        if (isChecked) {
+                            card.className = card.className.replace('border-slate-200', 'border-brand-500 ring-2 ring-brand-500/10');
+                        } else {
+                            card.className = card.className.replace('border-brand-500 ring-2 ring-brand-500/10', 'border-slate-200');
+                        }
+                    }
+                    fetchStats();
+                }
+            } catch (err) {
+                showToast("Failed to toggle sourcing status");
+            }
+        }
+
+        async function bulkSelectBestFit(selectedVal) {
+            try {
+                const res = await fetch('/api/jobs/bulk-select', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ category: 'BEST_FIT', selected: selectedVal })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(selectedVal ? `Selected all Best Fit jobs for Hunter sourcing!` : `Cleared sourcing selections.`);
+                    loadJobs();
+                    fetchStats();
+                }
+            } catch (err) {
+                showToast("Failed to update bulk selection");
+            }
+        }
+
+        async function onSourcingModeChange(newMode) {
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sourcing_mode: newMode,
+                        daily_hunter_limit: sourcingSettings.daily_hunter_limit || 2
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    sourcingSettings = data.settings;
+                    updateSourcingExplanation(newMode);
+                    showToast(`Sourcing mode updated to ${newMode === 'MANUAL' ? 'Manual Selection' : 'Automatic'}`);
+                    fetchStats();
+                }
+            } catch (e) {
+                showToast("Failed to update sourcing mode");
+            }
+        }
+
+        async function editDailyHunterLimit() {
+            const current = sourcingSettings.daily_hunter_limit || 2;
+            const input = prompt(`Adjust daily Hunter.io search limit (current: ${current}):\nNote: Each search uses 1 Hunter search credit to find contacts at that company.`, current);
+            if (input === null) return;
+            const val = parseInt(input.trim(), 10);
+            if (isNaN(val) || val < 1 || val > 20) {
+                showToast("Please enter a valid number between 1 and 20.");
+                return;
+            }
+            try {
+                const res = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sourcing_mode: sourcingSettings.sourcing_mode || 'MANUAL',
+                        daily_hunter_limit: val
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    sourcingSettings = data.settings;
+                    showToast(`Daily Hunter limit set to ${val} searches/day`);
+                    fetchStats();
+                }
+            } catch (e) {
+                showToast("Failed to update limit");
+            }
+        }
+
+        async function triggerScraperRun() {
+            const btn = document.getElementById('btn-run-scraper');
+            const hud = document.getElementById('scraper-hud');
+            const hudMsg = document.getElementById('scraper-hud-msg');
+            const hudTimer = document.getElementById('scraper-hud-timer');
+
+            if (btn) btn.disabled = true;
+            if (hud) hud.classList.remove('hidden');
+            if (hudMsg) hudMsg.innerText = "Launching LinkedIn scraper pipeline in background...";
+
+            scraperSecondsElapsed = 0;
+            if (scraperTimerInterval) clearInterval(scraperTimerInterval);
+            scraperTimerInterval = setInterval(() => {
+                scraperSecondsElapsed++;
+                if (hudTimer) hudTimer.innerText = `${scraperSecondsElapsed}s`;
+            }, 1000);
+
+            try {
+                const res = await fetch('/api/scraper/run', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showToast("Scraper launched! Extracting jobs from LinkedIn...");
+                    if (scraperPollingInterval) clearInterval(scraperPollingInterval);
+                    scraperPollingInterval = setInterval(pollScraperStatus, 2500);
+                } else {
+                    showToast(data.message || "Scraper already running");
+                    if (scraperPollingInterval) clearInterval(scraperPollingInterval);
+                    scraperPollingInterval = setInterval(pollScraperStatus, 2500);
+                }
+            } catch (err) {
+                showToast("Failed to start scraper process");
+                if (btn) btn.disabled = false;
+                if (hud) hud.classList.add('hidden');
+                if (scraperTimerInterval) clearInterval(scraperTimerInterval);
+            }
+        }
+
+        async function pollScraperStatus() {
+            try {
+                const res = await fetch('/api/scraper/status');
+                const data = await res.json();
+                const state = data.scraper_state || {};
+                const hud = document.getElementById('scraper-hud');
+                const hudMsg = document.getElementById('scraper-hud-msg');
+                const terminal = document.getElementById('scraper-terminal-drawer');
+                const btn = document.getElementById('btn-run-scraper');
+
+                if (hudMsg && state.message) {
+                    hudMsg.innerText = state.message;
+                }
+
+                if (terminal && state.logs) {
+                    terminal.innerHTML = state.logs.map(l => `<div>&gt; ${escapeHtml(l)}</div>`).join('');
+                    terminal.scrollTop = terminal.scrollHeight;
+                }
+
+                if (!state.running) {
+                    if (scraperPollingInterval) {
+                        clearInterval(scraperPollingInterval);
+                        scraperPollingInterval = null;
+                    }
+                    if (scraperTimerInterval) {
+                        clearInterval(scraperTimerInterval);
+                        scraperTimerInterval = null;
+                    }
+
+                    if (btn) btn.disabled = false;
+                    if (hud) {
+                        setTimeout(() => { hud.classList.add('hidden'); }, 3000);
+                    }
+
+                    if (state.status === 'COMPLETED') {
+                        showToast("Scraper finished! New jobs cached in Daily Jobs.");
+                    } else if (state.status === 'FAILED') {
+                        showToast(`Scraper finished with notice: ${state.message}`);
+                    }
+
+                    fetchStats();
+                    loadJobs();
+                    loadReviewCards();
+                }
+            } catch (err) {
+                console.error("Error polling scraper", err);
+            }
+        }
+
+        function toggleScraperTerminal() {
+            const drawer = document.getElementById('scraper-terminal-drawer');
+            if (drawer) drawer.classList.toggle('hidden');
+        }
+
+        function escapeHtml(text) {
+            return String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
         function switchTab(tabId) {
-            ['review', 'companies', 'contacts'].forEach(t => {
-                document.getElementById(`tab-${t}`).classList.add('hidden');
-                document.getElementById(`tab-btn-${t}`).className = "py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2";
+            ['review', 'jobs', 'companies', 'contacts'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.className = "py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2";
             });
 
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-            document.getElementById(`tab-btn-${tabId}`).className = "py-3 px-1 tab-active flex items-center space-x-2";
+            const activeEl = document.getElementById(`tab-${tabId}`);
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeEl) activeEl.classList.remove('hidden');
+            if (activeBtn) activeBtn.className = "py-3 px-1 tab-active flex items-center space-x-2";
 
+            if (tabId === 'jobs') loadJobs();
             if (tabId === 'companies') loadCompaniesTable();
             if (tabId === 'contacts') loadContactsTable();
             if (tabId === 'review') loadReviewCards();
@@ -1069,13 +1735,14 @@
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = msg;
             toast.classList.remove('hidden');
-            setTimeout(() => { toast.classList.add('hidden'); }, 3000);
+            setTimeout(() => { toast.classList.add('hidden'); }, 3500);
         }
 
         // Initial Load
         fetchProfiles();
         fetchStats();
         loadReviewCards();
+        loadJobs();
     </script>
 </body>
 </html>

@@ -8,7 +8,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from src.db.db import init_db, upsert_company, get_company
+from src.db.db import init_db, upsert_company, get_company, upsert_scraped_job, get_active_profile
 from src.agents.company_scorer import calculate_strategic_company_score
 
 # Common tech keywords to extract concisely (top 3-5)
@@ -59,30 +59,61 @@ def parse_applicant_count(raw_val) -> int:
     matches = re.findall(r'\d+', str(raw_val).replace(',', ''))
     return int(matches[0]) if matches else 0
 
-def ingest_scraped_jobs(jobs: List[Dict]) -> Dict:
+def ingest_scraped_jobs(jobs: List[Dict], profile_id: Optional[int] = None) -> Dict:
     """
-    Ingest a list of scraped jobs into the companies table with Two-Track intelligence:
+    Ingest a list of scraped jobs into the companies and scraped_jobs tables with Two-Track intelligence:
     - Track 1: Active job with < 80 applicants (High Urgency -> Priority Tier 1).
     - Track 2: Strategic scoring (Location 30 pts, Industry 45 pts, Size 15 pts, Tech 10 pts).
+    - Scraped Jobs: Cached with categories (BEST_FIT, WORSE_FIT, EXCLUDE) and sourcing flags.
     """
     if not jobs:
         print("[Ingest] No jobs provided to ingest.")
-        return {"total_companies": 0, "track_1": 0, "track_2": 0}
+        return {"total_companies": 0, "total_jobs": 0, "track_1": 0, "track_2": 0}
 
     init_db()
+    import hashlib
+    active_prof = get_active_profile()
+    target_prof_id = profile_id or (active_prof["id"] if active_prof else 1)
     
     companies_map: Dict[str, Dict] = {}
+    total_jobs_saved = 0
+
     for job in jobs:
         comp_name = job.get("company", "").strip()
-        if not comp_name:
+        title = job.get("title", "").strip()
+        job_link = job.get("link", "").strip()
+        if not comp_name and not title:
             continue
             
         apps = parse_applicant_count(job.get("applicants", 0))
         location = job.get("location", "Los Angeles, CA")
-        job_link = job.get("link", "")
         desc = job.get("description", "")
         category = job.get("category", "EXCLUDE")
+        reason = job.get("reason") or job.get("fit_reason") or ""
+        domain = resolve_company_domain(comp_name) if comp_name else "unknown.com"
+
+        # 1. Upsert into scraped_jobs daily cache
+        raw_id = job_link if job_link else f"{comp_name}_{title}"
+        job_id = hashlib.md5(raw_id.encode('utf-8')).hexdigest()[:16]
+        upsert_scraped_job(
+            job_id=job_id,
+            title=title,
+            company=comp_name,
+            company_domain=domain,
+            location=location,
+            url=job_link,
+            applicants=apps,
+            category=category,
+            reason=reason,
+            description=desc,
+            selected_for_sourcing=0,
+            profile_id=target_prof_id
+        )
+        total_jobs_saved += 1
         
+        if not comp_name:
+            continue
+
         # Track 1 condition: < 80 applicants
         is_track_1 = (apps > 0 and apps < 80) or (category == "BEST_FIT" and apps < 80)
 
@@ -154,6 +185,7 @@ def ingest_scraped_jobs(jobs: List[Dict]) -> Dict:
 
     return {
         "total_companies": len(companies_map),
+        "total_jobs": total_jobs_saved,
         "track_1": track_1_count,
         "track_2": track_2_count
     }

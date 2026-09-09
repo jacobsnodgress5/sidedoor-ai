@@ -21,7 +21,9 @@ from src.db.db import (
     record_api_usage,
     get_daily_api_usage,
     get_active_profile,
-    get_profile_by_id
+    get_profile_by_id,
+    get_sourcing_settings,
+    get_selected_companies_for_sourcing
 )
 from src.sourcers.hunter_sourcer import (
     source_hunter_candidates,
@@ -89,13 +91,16 @@ def _process_single_outreach(task: Dict) -> Dict:
 
 def run_daily_allocation(
     daily_cap: int = DAILY_MESSAGE_CAP,
-    companies_per_day: int = 2,
+    companies_per_day: Optional[int] = None,
     contacts_per_company: int = 10,
     profile_id: Optional[int] = None
 ) -> Dict:
     """
     Execute Hunter-Driven Daily Prospecting with Safety Controls:
-    - Hard daily credit stopper: Never spends more than MAX_HUNTER_CREDITS_PER_DAY (default: 2/day).
+    - Hard daily credit stopper: Respects configured daily_hunter_limit (default: 2/day).
+    - Mode aware:
+        - MANUAL (default): Only sources contacts for companies explicitly selected in Daily Jobs.
+        - AUTO: Prioritizes Track 1 (active <80 applicants) and Track 2 strategic scoring.
     - Daily batch hold: If the daily cap was already reached today, holds existing review cards without re-querying.
     - Scoped to active profile/campaign and conserves Hunter's credits.
     """
@@ -105,13 +110,19 @@ def run_daily_allocation(
     prof_id = active_profile["id"] if active_profile else 1
     prof_name = active_profile.get("profile_name") or active_profile.get("full_name") if active_profile else "Default"
 
+    # Fetch sourcing settings & daily limit
+    sourcing_settings = get_sourcing_settings(prof_id)
+    sourcing_mode = sourcing_settings.get("sourcing_mode", "MANUAL")
+    daily_hunter_limit = sourcing_settings.get("daily_hunter_limit") or MAX_HUNTER_CREDITS_PER_DAY
+    effective_companies_limit = companies_per_day if companies_per_day is not None else daily_hunter_limit
+
     print("=" * 70)
-    print(f"SIDEDOOR AI: PROSPECTING ENGINE [{prof_name}] (Cap: {daily_cap}, Companies: {companies_per_day})")
+    print(f"SIDEDOOR AI: PROSPECTING ENGINE [{prof_name}] (Mode: {sourcing_mode}, Cap: {daily_cap}, Daily Hunter Limit: {daily_hunter_limit})")
     print("=" * 70)
 
     # 1. Daily Credit & Batch Hold Check
     today_hunter_usage = get_daily_api_usage("HUNTER")
-    print(f"[Daily Credit Monitor] Hunter searches used today: {today_hunter_usage} / {MAX_HUNTER_CREDITS_PER_DAY} allowed")
+    print(f"[Daily Credit Monitor] Hunter searches used today: {today_hunter_usage} / {daily_hunter_limit} allowed")
 
     conn = get_db_connection()
     existing_drafts = conn.execute(
@@ -121,50 +132,79 @@ def run_daily_allocation(
     conn.close()
 
     # If daily credit cap is already reached, activate safety hold
-    if today_hunter_usage >= MAX_HUNTER_CREDITS_PER_DAY:
-        print(f"\n[DAILY SAFETY LOCK ACTIVATED] Daily limit of {MAX_HUNTER_CREDITS_PER_DAY} Hunter searches reached for today.")
+    if today_hunter_usage >= daily_hunter_limit:
+        print(f"\n[DAILY SAFETY LOCK ACTIVATED] Daily limit of {daily_hunter_limit} Hunter searches reached for today.")
         if existing_drafts:
             print(f"[HOLDING BATCH] Preserving today's {len(existing_drafts)} review cards (0 additional Hunter credits spent).")
             return {
                 "status": "DAILY_LIMIT_HOLD",
-                "message": f"Daily limit of {MAX_HUNTER_CREDITS_PER_DAY} Hunter searches reached. Holding today's {len(existing_drafts)} prospects.",
+                "message": f"Daily limit of {daily_hunter_limit} Hunter searches reached. Holding today's {len(existing_drafts)} prospects.",
                 "hunter": [dict(r) for r in existing_drafts],
                 "total_drafted": len(existing_drafts),
                 "companies": list(set(r["company_domain"] for r in existing_drafts)),
                 "today_credits_used": today_hunter_usage,
-                "daily_credit_limit": MAX_HUNTER_CREDITS_PER_DAY
+                "daily_credit_limit": daily_hunter_limit,
+                "sourcing_mode": sourcing_mode
             }
         else:
             print("[NOTICE] No pending drafts found in cache. Daily search quota will reset tomorrow.")
             return {
                 "status": "DAILY_LIMIT_REACHED",
-                "message": f"Daily limit of {MAX_HUNTER_CREDITS_PER_DAY} Hunter searches reached for today. Resets tomorrow.",
+                "message": f"Daily limit of {daily_hunter_limit} Hunter searches reached for today. Resets tomorrow.",
                 "hunter": [],
                 "total_drafted": 0,
                 "companies": [],
                 "today_credits_used": today_hunter_usage,
-                "daily_credit_limit": MAX_HUNTER_CREDITS_PER_DAY
+                "daily_credit_limit": daily_hunter_limit,
+                "sourcing_mode": sourcing_mode
             }
 
-    track_1_comps = get_track_1_companies()
-    track_2_comps = get_track_2_companies()
-    all_comps = get_all_companies()
-
-    if not all_comps:
-        print("[Allocation] No companies found in database. Ingest companies first.")
-        return {"hunter": [], "total_drafted": 0, "companies": []}
-
-    print(f"[Allocation] Total companies in DB: {len(all_comps)}")
-    print(f"  - Track 1 (Active <80 Apps): {len(track_1_comps)}")
-    print(f"  - Track 2 (Strategic Scored): {len(track_2_comps)}")
-
-    # Priority pool: Track 1 companies first, then top-scored Track 2 companies
+    # 2. Select companies based on Sourcing Mode (MANUAL vs AUTO)
     ordered_companies = []
-    seen_domains = set()
-    for c in track_1_comps + track_2_comps:
-        if c["domain"] not in seen_domains:
-            ordered_companies.append(c)
-            seen_domains.add(c["domain"])
+    if sourcing_mode == "MANUAL":
+        selected_comps = get_selected_companies_for_sourcing(prof_id)
+        if not selected_comps:
+            print("\n[Manual Sourcing Notice] No companies currently selected for sourcing.")
+            return {
+                "status": "NO_COMPANIES_SELECTED",
+                "message": "Manual selection mode is active, but you haven't selected any companies yet. Please select the companies you want to source on the Daily Jobs page or switch to Automatic mode in Settings.",
+                "hunter": [dict(r) for r in existing_drafts] if existing_drafts else [],
+                "total_drafted": len(existing_drafts) if existing_drafts else 0,
+                "companies": [],
+                "today_credits_used": today_hunter_usage,
+                "daily_credit_limit": daily_hunter_limit,
+                "sourcing_mode": "MANUAL"
+            }
+        ordered_companies = selected_comps
+        print(f"[Manual Sourcing] Sourcing from {len(ordered_companies)} user-selected companies (Limit: {effective_companies_limit}).")
+    else:
+        track_1_comps = get_track_1_companies()
+        track_2_comps = get_track_2_companies()
+        all_comps = get_all_companies()
+
+        if not all_comps:
+            print("[Allocation] No companies found in database. Ingest companies first.")
+            return {
+                "status": "NO_COMPANIES_IN_DB",
+                "message": "No companies found in database. Please run the job scraper first.",
+                "hunter": [],
+                "total_drafted": 0,
+                "companies": [],
+                "today_credits_used": today_hunter_usage,
+                "daily_credit_limit": daily_hunter_limit,
+                "sourcing_mode": sourcing_mode
+            }
+
+        print(f"[Auto Allocation] Total companies in DB: {len(all_comps)}")
+        print(f"  - Track 1 (Active <80 Apps): {len(track_1_comps)}")
+        print(f"  - Track 2 (Strategic Scored): {len(track_2_comps)}")
+
+        # Priority pool: Track 1 companies first, then top-scored Track 2 companies
+        seen_domains = set()
+        for c in track_1_comps + track_2_comps:
+            if c["domain"] not in seen_domains:
+                ordered_companies.append(c)
+                seen_domains.add(c["domain"])
 
     target_companies = []
     tasks = []
@@ -204,7 +244,7 @@ def run_daily_allocation(
                         "is_backup": False
                     })
                 target_companies.append(comp)
-                if len(target_companies) >= companies_per_day:
+                if len(target_companies) >= effective_companies_limit:
                     break
                 continue
 
@@ -224,15 +264,15 @@ def run_daily_allocation(
         else:
             # Check hard credit stopper before consuming live API credit
             current_credits = get_daily_api_usage("HUNTER")
-            if current_credits >= MAX_HUNTER_CREDITS_PER_DAY:
-                print(f"-> [Daily Credit Stopper] Daily limit of {MAX_HUNTER_CREDITS_PER_DAY} searches reached. Stopping live sourcing.")
+            if current_credits >= daily_hunter_limit:
+                print(f"-> [Daily Credit Stopper] Daily limit of {daily_hunter_limit} searches reached. Stopping live sourcing.")
                 break
 
             print(f"\n-> [HUNTER API] Sourcing up to {contacts_per_company} real contacts for {comp_name} ({domain})...")
             candidates = source_hunter_candidates(comp_name, domain, count=contacts_per_company, profile=active_profile)
             # Record credit expenditure
             record_api_usage("HUNTER", domain, credits_used=1)
-            print(f"-> [Credit Logged] Consumed 1 Hunter search credit for {domain} (Today: {get_daily_api_usage('HUNTER')}/{MAX_HUNTER_CREDITS_PER_DAY})")
+            print(f"-> [Credit Logged] Consumed 1 Hunter search credit for {domain} (Today: {get_daily_api_usage('HUNTER')}/{daily_hunter_limit})")
 
         if not candidates:
             print(f"-> [Notice] No indexed contacts found for {comp_name} ({domain}). Checking next company...")
@@ -260,7 +300,7 @@ def run_daily_allocation(
                 "profile_id": prof_id
             })
 
-        if len(target_companies) >= companies_per_day:
+        if len(target_companies) >= effective_companies_limit:
             break
 
     # Limit to daily_cap
@@ -295,7 +335,8 @@ def run_daily_allocation(
         "total_drafted": len(hunter_results),
         "companies": [c["company_name"] for c in target_companies],
         "today_credits_used": get_daily_api_usage("HUNTER"),
-        "daily_credit_limit": MAX_HUNTER_CREDITS_PER_DAY
+        "daily_credit_limit": daily_hunter_limit,
+        "sourcing_mode": sourcing_mode
     }
 
 if __name__ == "__main__":
