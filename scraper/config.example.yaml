@@ -1,0 +1,121 @@
+# LinkedIn Job Scraper & Filter Configuration
+
+# Search Parameters
+search:
+  # The list of search terms.
+  keywords:
+    - "data scientist entry level"
+    - "data analyst entry level"
+    - "data engineer entry level"
+    - "machine learning engineer entry level"
+  
+  # Search experience levels (using LinkedIn's official search filters):
+  # 1 = Internship, 2 = Entry Level, 3 = Associate, 4 = Mid-Senior, 5 = Director, 6 = Executive
+  # Note: Left empty [] per plan to let search terms and python stage 1 handle filtering.
+  experience_levels: []
+  
+  # Search geography parameters (Default: Los Angeles, CA area)
+  geo_id: "102448103"      # LinkedIn's ID for Los Angeles Metropolitan Area
+  distance: 50             # Distance in miles
+  time_range: "r86400"     # r86400 = past 24 hours. Use "" (empty string) for any time.
+  max_applicants: 100      # Discard job card if applicants exceed this count
+  max_pages: 1             # Search depth (N pages of results per keyword)
+
+# Candidate Profile (Used by LLM for alignment verification)
+profile:
+  name: "Jacob Snodgress"
+  education:
+    degree: "B.S. in Applied Mathematics (Specialization in Computing)"
+    minor: "Data Science Engineering"
+    university: "University of California, Los Angeles (UCLA)"
+    graduation_date: "June 2026 (Graduated)"
+    gpa: "3.64"
+    coursework:
+      - "Algorithms and Complexity"
+      - "Data Science"
+      - "Machine Learning"
+      - "Natural Language Processing"
+      - "Statistical Analysis"
+      - "Optimization"
+      - "Mathematical Game Theory"
+  
+  experience:
+    - role: "Research Data Scientist"
+      company: "Atmospheric Sciences Department, UCLA"
+      duration: "Sept 2024 - Present"
+      description: "Engineered predictive mathematical models and tracking algorithms to process massive spatiotemporal datasets. Managed documentation and iteration cycles for academic publication."
+  
+  skills:
+    programming:
+      - "Python"
+      - "C++"
+      - "SQL/SQLite"
+      - "R"
+      - "JavaScript"
+      - "HTML/CSS"
+      - "Bash"
+    data_science_ml:
+      - "NumPy"
+      - "Pandas"
+      - "Scikit-learn"
+      - "PyTorch"
+      - "TensorFlow"
+      - "XGBoost"
+      - "Matplotlib"
+      - "Seaborn"
+      - "SciPy"
+    tools_environments:
+      - "Git/GitHub"
+      - "Linux/Bash"
+      - "Tableau"
+      - "Power BI"
+      - "PostgreSQL"
+      - "AWS RDS PostgreSQL"
+      - "Next.js (React/TypeScript)"
+      - "LaTeX"
+
+# Exclusions (Regex patterns applied to title and description)
+exclusions:
+  # Discard if job title matches any of these (case-insensitive)
+  job_titles:
+    - "senior"
+    - "sr\\."
+    - "lead"
+    - "principal"
+    - "director"
+    - "manager"
+    - "staff"
+    - "head of"
+    - "vp"
+    - "architect"
+  
+  # Discard if job description requires these years of experience
+  # Matches "4+ years", "5+ years", "6 years", etc.
+  experience_regex: "\\b([4-9]|\\d{2})\\+\\s*(years|yrs)\\b|\\b([4-9]|\\d{2})\\s*(years|yrs)\\s+of\\s+experience\\b"
+  
+  # Discard if description requires an active security clearance
+  clearance_regex: "(?i)\\b(must\\s+(possess|hold|have)|require(s)?)\\s+an?\\s+active\\s+(secret|top\\s+secret|ts/sci|clearance)\\b"
+
+# Notification Settings
+email:
+  # Set to true to send emails, or false to use local Windows desktop notifications + browser auto-open
+  enabled: false
+  # The sender email (you can use a dummy Gmail account created just for this purpose)
+  sender: "jacobsscrapehelper@gmx.com"
+  receiver: "jacobsnodgress5@gmail.com"
+  smtp_server: "mail.gmx.com"
+  smtp_port: 587
+  # Paste your Gmail App Password here directly. Alternatively, leave this blank
+  # and set the LINKEDIN_EMAIL_PASSWORD environment variable.
+  password: ""
+  password_env_var: "LINKEDIN_EMAIL_PASSWORD"
+
+# LLM Configuration
+llm:
+  # The Gemini model to use. gemini-2.5-flash or gemini-1.5-flash are cost-efficient.
+  model: "gemini-2.5-flash"
+  # Paste your Gemini API key here directly. Alternatively, leave this blank
+  # and set the GEMINI_API_KEY environment variable (already configured in .env).
+  api_key: ""
+  # Environment variable where the Gemini API key is stored (fallback)
+  api_key_env_var: "GEMINI_API_KEY"

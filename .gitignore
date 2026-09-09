@@ -33,3 +33,10 @@ scratch/
 Thumbs.db
 .vscode/
 .idea/
+
+# Scraper Credentials, Session Cookies & Debug Artifacts
+scraper/auth.json
+auth.json
+scraper/*.png
+scraper/*.html
+*.png

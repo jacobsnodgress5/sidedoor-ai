@@ -77,7 +77,18 @@ sidedoor-ai/
 ├── app.py                      # Application entry point (starts web server)
 ├── start.bat                   # 1-click Windows launcher
 ├── schema.sql                  # SQLite schema (multi-profile, companies, contacts)
-├── requirements.txt            # Python dependencies
+├── requirements.txt            # Python dependencies (Playwright, Gemini, etc.)
+├── scraper/                    # LinkedIn Job Scraper & Qualification Pipeline
+│   ├── main.py                 # Pipeline runner & direct SideDoor ingestion trigger
+│   ├── scraper.py              # Playwright LinkedIn job scraper
+│   ├── filter.py               # Two-stage AI job qualification & candidate scoring
+│   ├── login.py                # LinkedIn session / cookie manager
+│   ├── notifier.py             # HTML email reports generator
+│   ├── progress_overlay.py     # Desktop HUD progress overlay
+│   ├── config.yaml             # Scraper configuration & target criteria
+│   ├── config.example.yaml     # Template configuration
+│   ├── run_daily.bat           # Scheduled daily run launcher
+│   └── run_silent.vbs          # Headless background execution script
 ├── src/
 │   ├── agents/
 │   │   ├── copywriter.py       # Personalized outreach generator (Gemini 2.5 Flash)
