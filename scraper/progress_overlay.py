@@ -52,7 +52,7 @@ class ProgressOverlay:
         
         title_label = tk.Label(
             header_frame,
-            text="LinkedIn Scraper & NetWeave AI",
+            text="LinkedIn Scraper & SideDoor AI",
             font=("Segoe UI", 10, "bold"),
             fg=accent_color,
             bg=card_color
