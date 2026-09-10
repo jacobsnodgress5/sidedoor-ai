@@ -33,31 +33,46 @@ No message goes out with out your approval, but you don't have to do the work.
 
 ## Quickstart
 
-### Option 1: Windows (One-Click)
-Double-click `start.bat`. It will detect your Python/Anaconda installation, initialize your local environment, and open `http://localhost:8080` in your browser.
+### Prerequisites
+1. **Python 3.10+**
+2. **Google Gemini API Key** (Free tier): [Google AI Studio](https://aistudio.google.com/app/apikey)
+3. **Hunter.io API Key** (Free 25-50 searches/month): [Hunter.io API](https://hunter.io/api)
 
-### Option 2: Command Line (Windows, macOS, Linux)
+---
+
+### Step-by-Step Setup
+
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/sidedoor-ai.git
+   git clone https://github.com/jacobsnodgress5/sidedoor-ai.git
    cd sidedoor-ai
    ```
 
 2. **Install dependencies**:
    ```bash
    pip install -r requirements.txt
+   playwright install chromium
    ```
 
 3. **Configure API Keys**:
-   - Copy `.env.example` to `.env` or simply configure your keys in the web UI upon launch: (you must manually find and copy API keys from these sites, may include creating a profile. Takes less than 5 minutes.
-     - **Gemini API Key** (Free): [Google AI Studio](https://aistudio.google.com/app/apikey)
-     - **Hunter.io API Key** (Free 25 searches/month): [Hunter.io API](https://hunter.io/api)
+   - Create a `.env` file in the root directory:
+     ```ini
+     GEMINI_API_KEY="your_gemini_api_key"
+     HUNTER_API_KEY="your_hunter_api_key"
+     ```
+   *(You can also input your API keys directly into the web interface upon first launch).*
 
-4. **Launch the Web Dashboard**:
+4. **One-Time LinkedIn Authentication (Required for Scraper)**:
+   ```bash
+   python scraper/login.py
+   ```
+   A browser window will open. Log into LinkedIn manually once. Once your feed loads, press **Enter** in your terminal. This saves your session cookies securely into `scraper/auth.json` so automated scraping works without being blocked.
+
+5. **Launch SideDoor AI**:
    ```bash
    python app.py
    ```
-   Open your browser to [http://localhost:8080](http://localhost:8080).
+   Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ---
 

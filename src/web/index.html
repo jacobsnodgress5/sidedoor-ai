@@ -1767,6 +1767,11 @@
                     showToast("Scraper launched! Extracting jobs from LinkedIn...");
                     if (scraperPollingInterval) clearInterval(scraperPollingInterval);
                     scraperPollingInterval = setInterval(pollScraperStatus, 2500);
+                } else if (data.needs_auth) {
+                    if (btn) btn.disabled = false;
+                    if (hud) hud.classList.add('hidden');
+                    if (scraperTimerInterval) clearInterval(scraperTimerInterval);
+                    alert("⚠️ LinkedIn Authentication Required:\n\nPlease run 'python scraper/login.py' once in your terminal to save your login session, then try again.");
                 } else {
                     showToast(data.message || "Scraper already running");
                     if (scraperPollingInterval) clearInterval(scraperPollingInterval);

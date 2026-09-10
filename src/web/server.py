@@ -169,9 +169,11 @@ class SideDoorDashboardHandler(SimpleHTTPRequestHandler):
             active = get_active_profile()
             prof_id = active["id"] if active else 1
             metrics = get_today_scraped_jobs_count(profile_id=prof_id)
+            auth_file = os.path.join(PROJECT_ROOT, "scraper", "auth.json")
             self.send_json_response({
                 "scraper_state": SCRAPER_STATE,
-                "metrics": metrics
+                "metrics": metrics,
+                "has_auth": os.path.exists(auth_file)
             })
         elif path == "/api/settings":
             active = get_active_profile()
@@ -322,7 +324,14 @@ class SideDoorDashboardHandler(SimpleHTTPRequestHandler):
                 self.send_json_response({"success": False, "error": str(e)}, status_code=500)
 
         elif path == "/api/scraper/run":
-            if SCRAPER_STATE["running"]:
+            auth_file = os.path.join(PROJECT_ROOT, "scraper", "auth.json")
+            if not os.path.exists(auth_file):
+                self.send_json_response({
+                    "success": False, 
+                    "needs_auth": True,
+                    "message": "LinkedIn authentication required. Run 'python scraper/login.py' once in your terminal to save your login session."
+                }, status_code=400)
+            elif SCRAPER_STATE["running"]:
                 self.send_json_response({"success": False, "message": "Scraper is already running."}, status_code=400)
             else:
                 thread = threading.Thread(target=_run_scraper_worker, daemon=True)

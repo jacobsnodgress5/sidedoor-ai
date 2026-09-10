@@ -134,34 +134,11 @@ def main():
     except Exception as ing_err:
         print(f"[Warning] SideDoor ingestion encountered notice: {ing_err}")
 
-    # 7. Hook: Launch dashboard server if needed & open browser
-    print("\n[System] Step 5: Launching SideDoor AI Web Dashboard...")
     if update_overlay:
-        update_overlay(100.0, "Opening SideDoor AI Dashboard...", "Complete!")
+        update_overlay(100.0, "Scraping & evaluation complete!", "Complete!")
         import time; time.sleep(1)
         close_overlay()
-    try:
-        import webbrowser
-        import subprocess
-        import urllib.request
-        
-        # Check if server is running, if not start it in background
-        server_running = False
-        try:
-            urllib.request.urlopen("http://localhost:8080/api/stats", timeout=1)
-            server_running = True
-        except Exception:
-            pass
-
-        if not server_running:
-            app_path = os.path.join(project_root, "app.py")
-            subprocess.Popen([sys.executable, app_path], cwd=project_root, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
-            print("[System] Started background dashboard server on port 8080.")
-
-        webbrowser.open("http://localhost:8080")
-        print("[System] Dashboard ready at: http://localhost:8080")
-    except Exception as ui_err:
-        print(f"[Warning] Could not auto-open dashboard: {ui_err}")
+    print("\n[System] All scraping & qualification steps completed.")
         
     print("\n" + "=" * 60)
     print("PIPELINE EXECUTION COMPLETE")

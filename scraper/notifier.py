@@ -406,15 +406,12 @@ def send_email(best_fit_jobs, worse_fit_jobs, excluded_jobs=None):
     # Check if email is enabled, otherwise use local desktop notifications
     email_enabled = email_cfg.get("enabled", False)
     if not email_enabled:
-        print("[Notifier] Email is disabled in config.yaml. Triggering local Windows notification...")
+        print("[Notifier] Email is disabled in config.yaml. Showing local completion notification...")
         
         # Display desktop notification
         title = "LinkedIn Job Scraper Complete"
-        msg = f"Found {len(best_fit_jobs)} Best Fit and {len(worse_fit_jobs)} Stretch jobs today! Opening dashboard..."
+        msg = f"Found {len(best_fit_jobs)} Best Fit and {len(worse_fit_jobs)} Stretch jobs today! Caching into SideDoor..."
         show_windows_notification(title, msg)
-        
-        # Automatically open in default browser
-        open_report_in_browser(backup_file)
         return True
 
     # Email Logic
