@@ -310,6 +310,10 @@
                     </div>
                     <div>
                         <div class="flex justify-between items-center text-xs mb-1">
+                            <span class="text-slate-600 font-medium">Selected for Sourcing:</span>
+                            <span id="hunter-selected-count-text" class="font-bold text-[#E66A2C]">0 Selected</span>
+                        </div>
+                        <div class="flex justify-between items-center text-xs mb-1">
                             <span class="text-slate-600 font-medium">Searches Today:</span>
                             <span id="hunter-daily-usage-text" class="font-bold text-[#245F73]">0 / 2 Used</span>
                         </div>
@@ -758,6 +762,14 @@
                     if (statHunterDaily) statHunterDaily.innerText = `${used}/${limit}`;
 
                     // Update widget in Daily Jobs
+                    const jm = data.job_metrics || {};
+                    const selectedCount = jm.selected_today || 0;
+                    const selectedCountText = document.getElementById('hunter-selected-count-text');
+                    if (selectedCountText) {
+                        selectedCountText.innerText = `${selectedCount} Selected`;
+                        selectedCountText.className = selectedCount > limit ? 'font-bold text-[#E66A2C]' : 'font-bold text-[#245F73]';
+                    }
+
                     const dailyText = document.getElementById('hunter-daily-usage-text');
                     if (dailyText) dailyText.innerText = `${used} / ${limit} Used`;
 
@@ -1654,9 +1666,9 @@
                     const card = document.getElementById(`job-card-${jobId}`);
                     if (card) {
                         if (isChecked) {
-                            card.className = card.className.replace('border-slate-200', 'border-brand-500 ring-2 ring-brand-500/10');
+                            card.className = card.className.replace('border-[#BBBDBC]', 'border-[#245F73] ring-2 ring-[#245F73]/20 shadow-md');
                         } else {
-                            card.className = card.className.replace('border-brand-500 ring-2 ring-brand-500/10', 'border-slate-200');
+                            card.className = card.className.replace('border-[#245F73] ring-2 ring-[#245F73]/20 shadow-md', 'border-[#BBBDBC]');
                         }
                     }
                     fetchStats();
