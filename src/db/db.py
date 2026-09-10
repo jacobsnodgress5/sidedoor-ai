@@ -918,9 +918,9 @@ def get_sourcing_settings(profile_id: Optional[int] = None) -> Dict:
             "daily_hunter_limit": daily_limit or 2,
             "today_hunter_used": today_hunter_credits,
             "monthly_hunter_used": monthly_hunter_credits,
-            "monthly_quota_estimate": 25,
+            "monthly_quota_estimate": 50,
             "credits_remaining_today": max(0, (daily_limit or 2) - today_hunter_credits),
-            "credits_remaining_month": max(0, 25 - monthly_hunter_credits)
+            "credits_remaining_month": max(0, 50 - monthly_hunter_credits)
         }
     finally:
         conn.close()

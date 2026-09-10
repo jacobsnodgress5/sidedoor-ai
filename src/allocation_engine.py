@@ -329,8 +329,15 @@ def run_daily_allocation(
     print(f"  - Verified Corporate Emails: {emails_count}")
     print(f"  - LinkedIn Notes: {linkedin_count}")
 
+    msg = None
+    if len(hunter_results) == 0:
+        msg = f"Hunter searched {len(target_companies) or len(ordered_companies)} company domain(s), but found no indexed employee emails on file. Try selecting larger or established companies."
+    else:
+        msg = f"Generated {len(hunter_results)} new outreach drafts across {len(target_companies)} companies!"
+
     return {
         "status": "SUCCESS",
+        "message": msg,
         "hunter": hunter_results,
         "total_drafted": len(hunter_results),
         "companies": [c["company_name"] for c in target_companies],

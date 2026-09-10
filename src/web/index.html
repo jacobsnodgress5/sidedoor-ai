@@ -263,7 +263,7 @@
                         </div>
                     </div>
                     <div class="flex justify-between items-center text-[11px] text-slate-500 pt-1 border-t border-slate-100">
-                        <span>Monthly: <strong id="hunter-monthly-usage-text" class="text-slate-700">0 / 25</strong></span>
+                        <span>Monthly: <strong id="hunter-monthly-usage-text" class="text-slate-700">0 / 50</strong></span>
                         <span id="hunter-remaining-today-badge" class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">2 left today</span>
                     </div>
                 </div>
@@ -1590,7 +1590,15 @@
 
         async function editDailyHunterLimit() {
             const current = sourcingSettings.daily_hunter_limit || 2;
-            const input = prompt(`Adjust daily Hunter.io search limit (current: ${current}):\nNote: Each search uses 1 Hunter search credit to find contacts at that company.`, current);
+            const input = prompt(
+                `⚡ Adjust Daily Hunter.io Search Limit (current: ${current} searches/day)\n\n` +
+                `⚠️ WARNING: Hunter.io Free Tier provides ONLY 50 search credits per month.\n` +
+                `• At 2/day: 50 credits last ~25 days (pacing for the entire month).\n` +
+                `• At 4/day: 50 credits will be depleted in ~12 days.\n` +
+                `• At 5/day: 50 credits will be depleted in ~10 days.\n\n` +
+                `Enter your desired daily search limit (1-20):`,
+                current
+            );
             if (input === null) return;
             const val = parseInt(input.trim(), 10);
             if (isNaN(val) || val < 1 || val > 20) {
