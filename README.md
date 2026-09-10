@@ -34,13 +34,21 @@ No message goes out with out your approval, but you don't have to do the work.
 ## Quickstart
 
 ### Option 1: Windows (1-Click Guided Setup — Recommended)
-Double-click **`start.bat`**. 
-It handles everything automatically:
+1. **Download / Clone** this repository to your computer:
+   ```bash
+   git clone https://github.com/jacobsnodgress5/sidedoor-ai.git
+   ```
+2. **Double-click `start.bat`** in File Explorer.
+
+A terminal window will pop open and automatically guide you through everything:
+- ✅ Detects Python (or guides you to install it)
 - ✅ Creates an isolated virtual environment (`.venv`)
 - ✅ Installs all dependencies and Playwright Chromium
-- ✅ Prompts you to paste your free API keys (with direct links to get them)
-- ✅ Opens LinkedIn so you can log in once and save your session
+- ✅ Prompts you for your free Gemini & Hunter.io API keys (with direct links)
+- ✅ Opens LinkedIn in a browser so you can log in once to save your session
 - ✅ Launches the dashboard and opens `http://localhost:8080` in your browser!
+
+*(To run SideDoor AI in the future, just double-click `start.bat` again anytime — it will skip setup and boot directly into the dashboard.)*
 
 ---
 
