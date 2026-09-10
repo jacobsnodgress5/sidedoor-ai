@@ -16,8 +16,39 @@ from google.genai import types
 
 def load_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+    cfg = {}
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+
+    # Check if a live active profile exists in the SideDoor SQLite database
+    try:
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        import sys
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from src.db.db import get_active_profile
+        active_prof = get_active_profile()
+        if active_prof and active_prof.get("full_name"):
+            # Construct candidate profile dynamically from active profile
+            cfg["profile"] = {
+                "name": active_prof.get("full_name"),
+                "education": {
+                    "degree": active_prof.get("degree_major", "B.S. in Computer Science"),
+                    "university": active_prof.get("alma_mater", "University"),
+                    "graduation_date": str(active_prof.get("grad_year", "2024")),
+                },
+                "skills": [s.strip() for s in (active_prof.get("skills") or "").split(",") if s.strip()],
+                "target_roles": [r.strip() for r in (active_prof.get("target_roles") or "").split(",") if r.strip()],
+                "target_locations": [l.strip() for l in (active_prof.get("target_locations") or "").split(",") if l.strip()],
+                "bio_summary": active_prof.get("bio_summary", "")
+            }
+            if active_prof.get("gemini_api_key"):
+                cfg.setdefault("llm", {})["api_key"] = active_prof.get("gemini_api_key")
+    except Exception:
+        pass
+
+    return cfg
 
 def run_stage1_regex_filter(job, config):
     """
