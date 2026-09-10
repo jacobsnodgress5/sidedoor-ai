@@ -33,14 +33,19 @@ No message goes out with out your approval, but you don't have to do the work.
 
 ## Quickstart
 
-### Prerequisites
-1. **Python 3.10+**
-2. **Google Gemini API Key** (Free tier): [Google AI Studio](https://aistudio.google.com/app/apikey)
-3. **Hunter.io API Key** (Free 25-50 searches/month): [Hunter.io API](https://hunter.io/api)
+### Option 1: Windows (1-Click Guided Setup — Recommended)
+Double-click **`start.bat`**. 
+It handles everything automatically:
+- ✅ Creates an isolated virtual environment (`.venv`)
+- ✅ Installs all dependencies and Playwright Chromium
+- ✅ Prompts you to paste your free API keys (with direct links to get them)
+- ✅ Opens LinkedIn so you can log in once and save your session
+- ✅ Launches the dashboard and opens `http://localhost:8080` in your browser!
 
 ---
 
-### Step-by-Step Setup
+### Option 2: Command Line (Windows, macOS, Linux)
+If you prefer running via terminal:
 
 1. **Clone the repository**:
    ```bash

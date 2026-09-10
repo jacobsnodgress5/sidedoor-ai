@@ -85,8 +85,15 @@
                 </div>
             </div>
 
-            <!-- Header Actions & Hunter Monitor -->
-            <div class="flex items-center space-x-4 text-sm">
+            <!-- Header Actions & Monitors -->
+            <div class="flex items-center space-x-3 text-sm">
+                <!-- LinkedIn Connection Status Indicator -->
+                <div id="linkedin-status-pill" class="flex items-center space-x-1.5 bg-white border border-[#BBBDBC]/60 px-2.5 py-1.5 rounded-lg shadow-sm text-xs transition" title="Checking LinkedIn connection status...">
+                    <span id="linkedin-status-dot" class="w-2 h-2 rounded-full bg-slate-300"></span>
+                    <i class="fa-brands fa-linkedin text-[#245F73] text-xs"></i>
+                    <span id="linkedin-status-text" class="text-[11px] font-semibold text-slate-700">LinkedIn: Checking...</span>
+                </div>
+
                 <!-- Clean Hunter Credit Monitor Pill -->
                 <button onclick="editDailyHunterLimit()" class="flex items-center space-x-2 bg-white hover:bg-slate-50 border border-[#BBBDBC]/60 px-3 py-1.5 rounded-lg shadow-sm transition group" title="Click to view or edit Hunter search limit (50 credits/mo free tier)">
                     <span class="w-2 h-2 rounded-full bg-[#245F73] group-hover:animate-pulse"></span>
@@ -1840,10 +1847,37 @@
                     fetchStats();
                     loadJobs();
                     loadReviewCards();
+                    checkLinkedInStatus();
                 }
             } catch (err) {
                 console.error("Error polling scraper", err);
             }
+        }
+
+        async function checkLinkedInStatus() {
+            try {
+                const res = await fetch('/api/scraper/status');
+                const data = await res.json();
+                const dot = document.getElementById('linkedin-status-dot');
+                const text = document.getElementById('linkedin-status-text');
+                const pill = document.getElementById('linkedin-status-pill');
+                if (data.has_auth) {
+                    if (dot) dot.className = "w-2 h-2 rounded-full bg-[#245F73]";
+                    if (text) text.innerText = "LinkedIn: Connected";
+                    if (pill) {
+                        pill.className = "flex items-center space-x-1.5 bg-[#F0F5F7] border border-[#BAD0D8] px-2.5 py-1.5 rounded-lg shadow-sm text-xs transition cursor-default";
+                        pill.title = "LinkedIn session is authenticated and ready to scrape.";
+                    }
+                } else {
+                    if (dot) dot.className = "w-2 h-2 rounded-full bg-[#E66A2C] animate-pulse";
+                    if (text) text.innerText = "LinkedIn: Login Needed";
+                    if (pill) {
+                        pill.className = "flex items-center space-x-1.5 bg-[#FDF6F0] border border-[#F5D3BC] px-2.5 py-1.5 rounded-lg shadow-sm text-xs transition cursor-pointer hover:bg-[#FAECE0]";
+                        pill.title = "Click to view instructions: run 'python scraper/login.py' in your terminal.";
+                        pill.onclick = () => alert("⚠️ LinkedIn Authentication Required:\n\nRun 'python scraper/login.py' once in your terminal to log in and save your session cookies.");
+                    }
+                }
+            } catch (e) {}
         }
 
         function toggleScraperTerminal() {
@@ -1884,6 +1918,7 @@
         // Initial Load
         fetchProfiles();
         fetchStats();
+        checkLinkedInStatus();
         loadReviewCards();
         loadJobs();
     </script>
