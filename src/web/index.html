@@ -13,12 +13,33 @@
             theme: {
                 extend: {
                     colors: {
+                        canvas: '#F2F0EF',
+                        divider: '#BBBDBC',
+                        teal: {
+                            DEFAULT: '#245F73',
+                            50: '#F0F5F7',
+                            100: '#DCE8EC',
+                            200: '#BAD0D8',
+                            600: '#245F73',
+                            700: '#1C4A5A',
+                            800: '#153641',
+                            900: '#0E242C',
+                        },
+                        rust: {
+                            DEFAULT: '#733E24',
+                            50: '#FAF4F2',
+                            100: '#F3E4DE',
+                            200: '#E4C3B5',
+                            600: '#733E24',
+                            700: '#5A301C',
+                            800: '#422314',
+                        },
                         brand: {
-                            50: '#f0fdf4',
-                            500: '#22c55e',
-                            600: '#16a34a',
-                            700: '#15803d',
-                            900: '#14532d',
+                            50: '#F0F5F7',
+                            500: '#245F73',
+                            600: '#245F73',
+                            700: '#1C4A5A',
+                            900: '#0E242C',
                         }
                     }
                 }
@@ -27,25 +48,25 @@
     </script>
     <style>
         .tab-active {
-            border-bottom: 2px solid #16a34a;
-            color: #16a34a;
-            font-weight: 600;
+            border-bottom: 2.5px solid #245F73 !important;
+            color: #245F73 !important;
+            font-weight: 700 !important;
         }
         .pill-active {
-            background-color: #f0fdf4 !important;
-            color: #15803d !important;
-            border: 1px solid #86efac !important;
+            background-color: #245F73 !important;
+            color: #ffffff !important;
+            border: 1px solid #245F73 !important;
             font-weight: 700 !important;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col font-sans">
+<body class="bg-[#F2F0EF] text-slate-800 min-h-screen flex flex-col font-sans">
 
     <!-- Top Navigation -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-gradient-to-tr from-brand-600 to-emerald-400 rounded-lg flex items-center justify-center text-white shadow-sm font-bold text-xl">
+                <div class="w-10 h-10 bg-[#245F73] text-white rounded-lg flex items-center justify-center shadow-sm font-bold text-xl">
                     <i class="fa-solid fa-door-open"></i>
                 </div>
                 <div>
@@ -54,30 +75,29 @@
                 </div>
             </div>
 
-            <!-- Stats Bar -->
-            <div class="flex items-center space-x-5 text-sm">
-                <div class="flex items-center space-x-1.5" title="Daily Hunter.io credit searches used">
-                    <span class="text-slate-500 font-medium">Hunter Searches:</span>
-                    <span id="stat-hunter" class="font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded text-xs">0/2</span>
-                </div>
-                <div class="flex items-center space-x-1.5">
-                    <span class="text-slate-500 font-medium">Companies:</span>
-                    <span id="stat-companies" class="font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded text-xs">0</span>
-                </div>
-                <div class="flex items-center space-x-1.5">
-                    <span class="text-slate-500 font-medium">Pending Review:</span>
-                    <span id="stat-drafts" class="font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-xs">0</span>
-                </div>
-                <div class="flex items-center space-x-1.5">
-                    <span class="text-slate-500 font-medium">Sent:</span>
-                    <span id="stat-sent" class="font-bold text-brand-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-xs">0</span>
-                </div>
+            <!-- Header Actions & Hunter Monitor -->
+            <div class="flex items-center space-x-4 text-sm">
+                <!-- Clean Hunter Credit Monitor Pill -->
+                <button onclick="editDailyHunterLimit()" class="flex items-center space-x-2 bg-white hover:bg-slate-50 border border-[#BBBDBC]/60 px-3 py-1.5 rounded-lg shadow-sm transition group" title="Click to view or edit Hunter search limit (50 credits/mo free tier)">
+                    <span class="w-2 h-2 rounded-full bg-[#245F73] group-hover:animate-pulse"></span>
+                    <i class="fa-solid fa-bolt text-[#733E24] text-xs"></i>
+                    <div class="text-left leading-tight">
+                        <div class="text-[11px] font-bold text-slate-800">
+                            Hunter: <span id="stat-hunter-remaining" class="text-[#245F73]">46/50</span> Left
+                        </div>
+                        <div class="text-[10px] text-slate-500">
+                            Today: <span id="stat-hunter-daily" class="font-semibold text-slate-700">0/2</span>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-pen text-[10px] text-slate-400 group-hover:text-[#245F73] ml-1"></i>
+                </button>
+
                 <!-- Profile Switcher Dropdown Container -->
                 <div class="relative inline-block text-left" id="profile-dropdown-container">
-                    <button onclick="toggleProfileDropdown()" id="btn-profile-dropdown" class="bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-md shadow-sm border border-slate-200 flex items-center space-x-2 transition" title="Select or manage profile">
-                        <div class="w-2 h-2 rounded-full bg-emerald-500"></div>
+                    <button onclick="toggleProfileDropdown()" id="btn-profile-dropdown" class="bg-white hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg shadow-sm border border-[#BBBDBC]/60 flex items-center space-x-2 transition" title="Select or manage profile">
+                        <div class="w-2 h-2 rounded-full bg-[#245F73]"></div>
                         <i class="fa-regular fa-user text-slate-400"></i>
-                        <span id="active-profile-label" class="max-w-[150px] truncate">Active Campaign</span>
+                        <span id="active-profile-label" class="max-w-[140px] truncate">Active Campaign</span>
                         <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
                     </button>
                     <!-- Dropdown Menu -->
@@ -89,7 +109,7 @@
                             <!-- Injected dynamically via JS: profile items -->
                         </div>
                         <div class="p-1.5 space-y-1 bg-slate-50 rounded-b-xl">
-                            <button onclick="createNewProfileClick()" class="w-full text-left px-2.5 py-1.5 text-xs text-brand-700 hover:bg-emerald-50 font-semibold rounded-lg flex items-center space-x-2 transition">
+                            <button onclick="createNewProfileClick()" class="w-full text-left px-2.5 py-1.5 text-xs text-[#245F73] hover:bg-[#F0F5F7] font-semibold rounded-lg flex items-center space-x-2 transition">
                                 <i class="fa-solid fa-plus text-xs"></i>
                                 <span>Create New Profile / Track</span>
                             </button>
@@ -100,31 +120,35 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="triggerAllocation()" id="run-btn" class="bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-3 py-2 rounded-md shadow flex items-center space-x-1.5 transition">
+
+                <button onclick="triggerAllocation()" id="run-btn" class="bg-[#245F73] hover:bg-[#1C4A5A] text-white text-xs font-semibold px-3.5 py-2 rounded-lg shadow flex items-center space-x-1.5 transition">
                     <i class="fa-solid fa-bolt"></i>
                     <span>Run Allocation</span>
                 </button>
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-8 text-sm">
+        <!-- Navigation Tabs with Scoped Count Badges -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 text-sm">
             <button onclick="switchTab('review')" id="tab-btn-review" class="py-3 px-1 tab-active flex items-center space-x-2">
                 <i class="fa-solid fa-inbox"></i>
-                <span>Daily Outreach Review</span>
+                <span>Daily Outreach</span>
+                <span id="badge-review-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5]">0</span>
             </button>
             <button onclick="switchTab('jobs')" id="tab-btn-jobs" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
                 <i class="fa-solid fa-briefcase"></i>
                 <span>Daily Jobs</span>
-                <span id="badge-jobs-count" class="ml-1.5 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">0</span>
+                <span id="badge-jobs-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">0</span>
             </button>
             <button onclick="switchTab('companies')" id="tab-btn-companies" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
                 <i class="fa-solid fa-building"></i>
-                <span>Companies Explorer</span>
+                <span>Companies</span>
+                <span id="badge-companies-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">0</span>
             </button>
             <button onclick="switchTab('contacts')" id="tab-btn-contacts" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
                 <i class="fa-solid fa-users"></i>
                 <span>Contacts History</span>
+                <span id="badge-contacts-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">0</span>
             </button>
         </div>
     </header>
@@ -137,21 +161,30 @@
             <!-- Dynamic Daily Pipeline Alert Banner (if scraper not run or 0 companies selected) -->
             <div id="daily-pipeline-banner" class="space-y-3"></div>
 
-            <div class="flex justify-between items-center bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                <div>
-                    <h2 class="text-base font-bold text-slate-900">Today's Outreach Pipeline</h2>
-                    <p class="text-xs text-slate-500">Review, edit, and copy or confirm drafted messages. Daily Cap: 15 messages.</p>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-4.5 rounded-xl border border-[#BBBDBC]/50 shadow-sm gap-4">
+                <div class="flex items-center space-x-3.5">
+                    <div class="w-10 h-10 rounded-xl bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5] flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-envelope-open-text"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-base font-bold text-slate-900">Today's Outreach Pipeline</h2>
+                            <span class="text-xs bg-[#FAF4F2] text-[#733E24] font-bold px-2 py-0.5 rounded-full border border-[#E4C3B5]">
+                                Pending Review: <span id="tab1-stat-drafts">0</span>
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Review, edit, and copy or confirm drafted messages. Daily Cap: 15 messages.</p>
+                    </div>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <select id="filter-status" onchange="loadReviewCards()" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 focus:ring-1 focus:ring-brand-500">
+                <div class="flex items-center space-x-3 w-full sm:w-auto justify-end">
+                    <select id="filter-status" onchange="loadReviewCards()" class="text-xs border border-[#BBBDBC]/60 rounded-lg px-2.5 py-1.5 bg-slate-50 text-slate-700 focus:ring-1 focus:ring-[#245F73]">
                         <option value="DRAFTED">Show: Pending Review</option>
                         <option value="ALL">Show: All Statuses</option>
                         <option value="SENT">Show: Sent Only</option>
                     </select>
-                    <button onclick="loadReviewCards()" class="p-1.5 text-slate-500 hover:text-slate-800 text-sm">
+                    <button onclick="loadReviewCards()" class="p-1.5 text-slate-500 hover:text-slate-800 text-sm border border-[#BBBDBC]/50 rounded-lg hover:bg-slate-50 transition" title="Refresh outreach cards">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
-                </div>
             </div>
 
             <!-- Cards Container -->
@@ -165,27 +198,32 @@
             </div>
         </section>
 
-        <!-- Tab: Daily Jobs & Company Sourcing -->
+        <!-- Tab 2: Daily Jobs & Company Sourcing -->
         <section id="tab-jobs" class="hidden space-y-6">
             <!-- Header Bar -->
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div class="bg-white p-5 rounded-xl border border-[#BBBDBC]/50 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <div class="flex items-center space-x-2.5">
-                        <span class="w-8 h-8 rounded-lg bg-emerald-100 text-brand-700 flex items-center justify-center font-bold text-sm">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8] flex items-center justify-center font-bold text-lg">
                             <i class="fa-solid fa-briefcase"></i>
-                        </span>
+                        </div>
                         <div>
-                            <h2 class="text-base font-bold text-slate-900">Daily Scraped Jobs & Sourcing</h2>
-                            <p class="text-xs text-slate-500">Discover and select which companies to search contacts for via Hunter.io.</p>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-base font-bold text-slate-900">Daily Scraped Jobs & Sourcing</h2>
+                                <span class="text-xs bg-[#F0F5F7] text-[#245F73] font-bold px-2 py-0.5 rounded-full border border-[#BAD0D8]">
+                                    Scraped Today: <span id="tab2-stat-jobs">0</span>
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Discover and select which companies to search contacts for via Hunter.io.</p>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-3 w-full md:w-auto">
-                    <button onclick="triggerScraperRun()" id="btn-run-scraper" class="w-full md:w-auto bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm flex items-center justify-center space-x-2 transition">
+                    <button onclick="triggerScraperRun()" id="btn-run-scraper" class="w-full md:w-auto bg-[#245F73] hover:bg-[#1C4A5A] text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm flex items-center justify-center space-x-2 transition">
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <span>Run Scraper Now</span>
                     </button>
-                    <button onclick="loadJobs()" class="p-2 text-slate-500 hover:text-slate-800 text-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition" title="Refresh job postings">
+                    <button onclick="loadJobs()" class="p-2 text-slate-500 hover:text-slate-800 text-sm border border-[#BBBDBC]/50 rounded-lg hover:bg-slate-50 transition" title="Refresh job postings">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                 </div>
@@ -205,11 +243,11 @@
                 </div>
                 <!-- Progress bar -->
                 <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                    <div id="scraper-progress-bar" class="bg-emerald-500 h-full w-1/3 animate-pulse"></div>
+                    <div id="scraper-progress-bar" class="bg-[#245F73] h-full w-1/3 animate-pulse"></div>
                 </div>
                 <div class="text-[11px] text-slate-400 flex justify-between items-center pt-1">
                     <span>You can continue browsing or reviewing messages while this runs.</span>
-                    <button onclick="toggleScraperTerminal()" class="text-emerald-400 hover:underline font-mono text-[11px]">Toggle Logs</button>
+                    <button onclick="toggleScraperTerminal()" class="text-[#245F73] hover:underline font-mono text-[11px]">Toggle Logs</button>
                 </div>
                 <!-- Collapsible terminal output -->
                 <div id="scraper-terminal-drawer" class="hidden max-h-36 overflow-y-auto bg-black/60 p-2.5 rounded font-mono text-[11px] text-slate-300 space-y-0.5 border border-slate-800">
@@ -220,22 +258,22 @@
             <!-- Sourcing Mode & Credit Monitor Bar -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Sourcing Mode Setting Card -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm md:col-span-2 space-y-2">
+                <div class="bg-white p-4 rounded-xl border border-[#BBBDBC]/50 shadow-sm md:col-span-2 space-y-2">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-sliders text-brand-600 text-sm"></i>
+                            <i class="fa-solid fa-sliders text-[#245F73] text-sm"></i>
                             <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Hunter Sourcing Mode</span>
                         </div>
                         <div class="flex items-center space-x-2">
                             <label for="select-sourcing-mode" class="text-xs text-slate-500 font-medium">Mode:</label>
-                            <select id="select-sourcing-mode" onchange="onSourcingModeChange(this.value)" class="text-xs font-semibold border border-slate-300 rounded-lg px-2.5 py-1 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-brand-500">
+                            <select id="select-sourcing-mode" onchange="onSourcingModeChange(this.value)" class="text-xs font-semibold border border-[#BBBDBC]/60 rounded-lg px-2.5 py-1 bg-slate-50 text-slate-800 focus:ring-1 focus:ring-[#245F73]">
                                 <option value="MANUAL">Manual Selection (Default)</option>
                                 <option value="AUTO">Automatic (AI Top Ranked)</option>
                             </select>
                         </div>
                     </div>
-                    <div class="bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs text-slate-600 flex items-start space-x-2">
-                        <i class="fa-solid fa-circle-info text-blue-500 mt-0.5 text-xs shrink-0"></i>
+                    <div class="bg-slate-50 border border-[#BBBDBC]/40 rounded-lg p-2.5 text-xs text-slate-600 flex items-start space-x-2">
+                        <i class="fa-solid fa-circle-info text-[#245F73] mt-0.5 text-xs shrink-0"></i>
                         <span id="sourcing-mode-explanation">
                             <strong>Manual Selection (Default):</strong> You decide exactly which companies Hunter sources contacts for using the checkboxes below. Switch to <strong>Automatic</strong> to let SideDoor auto-prioritize the top-ranked companies.
                         </span>
@@ -243,28 +281,28 @@
                 </div>
 
                 <!-- Daily Hunter Credit Widget Card -->
-                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                <div class="bg-white p-4 rounded-xl border border-[#BBBDBC]/50 shadow-sm space-y-3">
                     <div class="flex justify-between items-center">
                         <div class="flex items-center space-x-2">
-                            <i class="fa-solid fa-shield-halved text-sky-600 text-sm"></i>
+                            <i class="fa-solid fa-shield-halved text-[#245F73] text-sm"></i>
                             <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Hunter Credit Monitor</span>
                         </div>
-                        <button onclick="editDailyHunterLimit()" class="text-[11px] text-sky-600 hover:text-sky-800 font-semibold" title="Adjust daily search limit">
+                        <button onclick="editDailyHunterLimit()" class="text-[11px] text-[#245F73] hover:text-[#1C4A5A] font-semibold" title="Adjust daily search limit">
                             <i class="fa-solid fa-pen-to-square mr-0.5"></i> Edit Limit
                         </button>
                     </div>
                     <div>
                         <div class="flex justify-between items-center text-xs mb-1">
                             <span class="text-slate-600 font-medium">Searches Today:</span>
-                            <span id="hunter-daily-usage-text" class="font-bold text-sky-700">0 / 2 Used</span>
+                            <span id="hunter-daily-usage-text" class="font-bold text-[#245F73]">0 / 2 Used</span>
                         </div>
                         <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                            <div id="hunter-daily-progress" class="bg-sky-500 h-full w-0 transition-all duration-300"></div>
+                            <div id="hunter-daily-progress" class="bg-[#245F73] h-full w-0 transition-all duration-300"></div>
                         </div>
                     </div>
                     <div class="flex justify-between items-center text-[11px] text-slate-500 pt-1 border-t border-slate-100">
                         <span>Monthly: <strong id="hunter-monthly-usage-text" class="text-slate-700">0 / 50</strong></span>
-                        <span id="hunter-remaining-today-badge" class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]">2 left today</span>
+                        <span id="hunter-remaining-today-badge" class="px-1.5 py-0.5 rounded bg-[#F0F5F7] text-[#245F73] font-semibold text-[10px] border border-[#BAD0D8]">2 left today</span>
                     </div>
                 </div>
             </div>
@@ -293,10 +331,10 @@
                 <!-- Quick Actions & Search -->
                 <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
                     <div class="relative flex-1 sm:w-48">
-                        <input type="text" id="jobs-search-input" oninput="onJobsSearch(this.value)" placeholder="Search role or company..." class="w-full text-xs pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-slate-50">
+                        <input type="text" id="jobs-search-input" oninput="onJobsSearch(this.value)" placeholder="Search role or company..." class="w-full text-xs pl-7 pr-2.5 py-1.5 border border-[#BBBDBC]/60 rounded-lg focus:ring-1 focus:ring-[#245F73] focus:outline-none bg-slate-50">
                         <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-[11px] text-slate-400"></i>
                     </div>
-                    <button onclick="bulkSelectBestFit(1)" class="whitespace-nowrap px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-brand-700 border border-emerald-200 text-xs font-semibold rounded-lg flex items-center space-x-1 transition" title="Select all Best Fit jobs for Hunter sourcing">
+                    <button onclick="bulkSelectBestFit(1)" class="whitespace-nowrap px-2.5 py-1.5 bg-[#F0F5F7] hover:bg-[#DCE8EC] text-[#245F73] border border-[#BAD0D8] text-xs font-semibold rounded-lg flex items-center space-x-1 transition" title="Select all Best Fit jobs for Hunter sourcing">
                         <i class="fa-solid fa-check-double text-[11px]"></i>
                         <span>Select All Best Fit</span>
                     </button>
@@ -319,16 +357,33 @@
             </div>
         </section>
 
-        <!-- Tab 2: Companies Explorer -->
+        <!-- Tab 3: Companies Explorer -->
         <section id="tab-companies" class="hidden space-y-4">
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
-                    <h2 class="text-base font-bold text-slate-900">Target Companies Table</h2>
-                    <span class="text-xs text-slate-500">Auto-ingested from LinkedIn Job Scraper</span>
+            <div class="bg-white rounded-xl border border-[#BBBDBC]/50 overflow-hidden shadow-sm">
+                <div class="p-4.5 border-b border-[#BBBDBC]/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8] flex items-center justify-center font-bold text-base">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-base font-bold text-slate-900">Target Companies Explorer</h2>
+                                <span class="text-xs bg-[#F0F5F7] text-[#245F73] font-bold px-2 py-0.5 rounded-full border border-[#BAD0D8]">
+                                    Companies: <span id="tab3-stat-companies">0</span>
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Discovered via daily LinkedIn scraper & prioritized for outreach sourcing</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                        <button onclick="loadCompaniesTable()" class="p-2 text-slate-500 hover:text-slate-800 text-xs border border-[#BBBDBC]/50 rounded-lg hover:bg-slate-50 transition" title="Refresh companies">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh Table
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-[#BBBDBC]/30">
                             <tr>
                                 <th class="px-4 py-3">Domain</th>
                                 <th class="px-4 py-3">Company Name</th>
@@ -344,23 +399,41 @@
             </div>
         </section>
 
-        <!-- Tab 3: Contacts Explorer -->
+        <!-- Tab 4: Contacts Explorer -->
         <section id="tab-contacts" class="hidden space-y-4">
-            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                <div class="p-4 border-b border-slate-200 flex justify-between items-center">
-                    <h2 class="text-base font-bold text-slate-900">Contacts & Outreach History</h2>
-                    <span class="text-xs text-slate-500">Comprehensive log across all channels</span>
+            <div class="bg-white rounded-xl border border-[#BBBDBC]/50 overflow-hidden shadow-sm">
+                <div class="p-4.5 border-b border-[#BBBDBC]/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 rounded-lg bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5] flex items-center justify-center font-bold text-base">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h2 class="text-base font-bold text-slate-900">Contacts & Outreach History</h2>
+                                <span class="text-xs bg-[#FAF4F2] text-[#733E24] font-bold px-2 py-0.5 rounded-full border border-[#E4C3B5]">
+                                    Sent: <span id="tab4-stat-sent">0</span>
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Comprehensive audit log of generated drafts, Hunter contacts, and outreach status</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                        <button onclick="loadContactsTable()" class="p-2 text-slate-500 hover:text-slate-800 text-xs border border-[#BBBDBC]/50 rounded-lg hover:bg-slate-50 transition" title="Refresh contacts">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Refresh Log
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm text-slate-600">
-                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-slate-200">
+                        <thead class="bg-slate-50 text-xs uppercase font-semibold text-slate-500 border-b border-[#BBBDBC]/30">
                             <tr>
                                 <th class="px-4 py-3">Contact</th>
                                 <th class="px-4 py-3">Company</th>
                                 <th class="px-4 py-3">Classification</th>
                                 <th class="px-4 py-3">Channel / Email</th>
                                 <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Created</th>
+                                <th class="px-4 py-3">Action</th>
+                                <th class="px-4 py-3">Timestamp</th>
                             </tr>
                         </thead>
                         <tbody id="contacts-table-body" class="divide-y divide-slate-100"></tbody>
@@ -608,15 +681,35 @@
             try {
                 const res = await fetch('/api/stats');
                 const data = await res.json();
-                document.getElementById('stat-companies').innerText = data.total_companies || 0;
-                document.getElementById('stat-drafts').innerText = data.drafted_count || 0;
-                document.getElementById('stat-sent').innerText = data.sent_count || 0;
+                const totalCompanies = data.total_companies || 0;
+                const draftedCount = data.drafted_count || 0;
+                const sentCount = data.sent_count || 0;
+
+                // Scoped tab subheaders & badges
+                const badgeReview = document.getElementById('badge-review-count');
+                if (badgeReview) badgeReview.innerText = draftedCount;
+                const tab1Drafts = document.getElementById('tab1-stat-drafts');
+                if (tab1Drafts) tab1Drafts.innerText = draftedCount;
+
+                const badgeCompanies = document.getElementById('badge-companies-count');
+                if (badgeCompanies) badgeCompanies.innerText = totalCompanies;
+                const tab3Companies = document.getElementById('tab3-stat-companies');
+                if (tab3Companies) tab3Companies.innerText = totalCompanies;
+
+                const badgeContacts = document.getElementById('badge-contacts-count');
+                if (badgeContacts) badgeContacts.innerText = sentCount;
+                const tab4Sent = document.getElementById('tab4-stat-sent');
+                if (tab4Sent) tab4Sent.innerText = sentCount;
 
                 if (data.job_metrics) {
                     const jm = data.job_metrics;
-                    const badge = document.getElementById('badge-jobs-count');
-                    if (badge) {
-                        badge.innerText = jm.total_today || jm.total_all_time || 0;
+                    const badgeJobs = document.getElementById('badge-jobs-count');
+                    if (badgeJobs) {
+                        badgeJobs.innerText = jm.total_today || jm.total_all_time || 0;
+                    }
+                    const tab2Jobs = document.getElementById('tab2-stat-jobs');
+                    if (tab2Jobs) {
+                        tab2Jobs.innerText = jm.total_today || jm.total_all_time || 0;
                     }
                     const countAll = document.getElementById('count-pill-all');
                     if (countAll) countAll.innerText = jm.total_today || jm.total_all_time || 0;
@@ -634,11 +727,15 @@
                     const used = sourcingSettings.today_hunter_used || 0;
                     const limit = sourcingSettings.daily_hunter_limit || 2;
                     const monthUsed = sourcingSettings.monthly_hunter_used || 0;
-                    const monthQuota = sourcingSettings.monthly_quota_estimate || 25;
+                    const monthQuota = sourcingSettings.monthly_quota_estimate || 50;
+                    const monthRemaining = Math.max(0, monthQuota - monthUsed);
 
-                    // Update top bar stat
-                    const statHunter = document.getElementById('stat-hunter');
-                    if (statHunter) statHunter.innerText = `${used}/${limit}`;
+                    // Update clean header Hunter pill
+                    const statHunterRem = document.getElementById('stat-hunter-remaining');
+                    if (statHunterRem) statHunterRem.innerText = `${monthRemaining}/${monthQuota}`;
+
+                    const statHunterDaily = document.getElementById('stat-hunter-daily');
+                    if (statHunterDaily) statHunterDaily.innerText = `${used}/${limit}`;
 
                     // Update widget in Daily Jobs
                     const dailyText = document.getElementById('hunter-daily-usage-text');
@@ -648,19 +745,19 @@
                     if (progressBar) {
                         const pct = Math.min(100, Math.round((used / limit) * 100));
                         progressBar.style.width = `${pct}%`;
-                        progressBar.className = pct >= 100 ? 'bg-amber-500 h-full transition-all duration-300' : 'bg-sky-500 h-full transition-all duration-300';
+                        progressBar.className = pct >= 100 ? 'bg-[#733E24] h-full transition-all duration-300' : 'bg-[#245F73] h-full transition-all duration-300';
                     }
 
                     const monthlyText = document.getElementById('hunter-monthly-usage-text');
-                    if (monthlyText) monthlyText.innerText = `${monthUsed} / ${monthQuota}`;
+                    if (monthlyText) monthlyText.innerText = `${monthUsed} / ${monthQuota} (${monthRemaining} left)`;
 
                     const remainBadge = document.getElementById('hunter-remaining-today-badge');
                     if (remainBadge) {
                         const left = Math.max(0, limit - used);
                         remainBadge.innerText = `${left} left today`;
                         remainBadge.className = left === 0 
-                            ? 'px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold text-[10px]'
-                            : 'px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[10px]';
+                            ? 'px-1.5 py-0.5 rounded bg-[#FAF4F2] text-[#733E24] font-semibold text-[10px] border border-[#E4C3B5]'
+                            : 'px-1.5 py-0.5 rounded bg-[#F0F5F7] text-[#245F73] font-semibold text-[10px] border border-[#BAD0D8]';
                     }
 
                     // Update mode dropdown
