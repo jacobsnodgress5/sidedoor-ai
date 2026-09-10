@@ -26,13 +26,13 @@
                             900: '#0E242C',
                         },
                         rust: {
-                            DEFAULT: '#733E24',
-                            50: '#FAF4F2',
-                            100: '#F3E4DE',
-                            200: '#E4C3B5',
-                            600: '#733E24',
-                            700: '#5A301C',
-                            800: '#422314',
+                            DEFAULT: '#E66A2C',
+                            50: '#FDF6F0',
+                            100: '#FAECE0',
+                            200: '#F5D3BC',
+                            600: '#E66A2C',
+                            700: '#D95817',
+                            800: '#BA460E',
                         },
                         orange: {
                             DEFAULT: '#E66A2C',
@@ -49,7 +49,7 @@
                             500: '#E66A2C',
                             600: '#D95817',
                             700: '#BA460E',
-                            900: '#733E24',
+                            900: '#E66A2C',
                         }
                     }
                 }
@@ -90,7 +90,7 @@
                 <!-- Clean Hunter Credit Monitor Pill -->
                 <button onclick="editDailyHunterLimit()" class="flex items-center space-x-2 bg-white hover:bg-slate-50 border border-[#BBBDBC]/60 px-3 py-1.5 rounded-lg shadow-sm transition group" title="Click to view or edit Hunter search limit (50 credits/mo free tier)">
                     <span class="w-2 h-2 rounded-full bg-[#245F73] group-hover:animate-pulse"></span>
-                    <i class="fa-solid fa-bolt text-[#733E24] text-xs"></i>
+                    <i class="fa-solid fa-bolt text-[#E66A2C] text-xs"></i>
                     <div class="text-left leading-tight">
                         <div class="text-[11px] font-bold text-slate-800">
                             Hunter: <span id="stat-hunter-remaining" class="text-[#245F73]">46/50</span> Left
@@ -143,7 +143,7 @@
             <button onclick="switchTab('review')" id="tab-btn-review" class="py-3 px-1 tab-active flex items-center space-x-2">
                 <i class="fa-solid fa-inbox"></i>
                 <span>Daily Outreach</span>
-                <span id="badge-review-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5]">0</span>
+                <span id="badge-review-count" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#FDF6F0] text-[#E66A2C] border border-[#F5D3BC]">0</span>
             </button>
             <button onclick="switchTab('jobs')" id="tab-btn-jobs" class="py-3 px-1 text-slate-500 hover:text-slate-700 flex items-center space-x-2">
                 <i class="fa-solid fa-briefcase"></i>
@@ -173,13 +173,13 @@
 
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white p-5 rounded-xl border border-[#BBBDBC] shadow-sm gap-4">
                 <div class="flex items-center space-x-3.5">
-                    <div class="w-10 h-10 rounded-xl bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5] flex items-center justify-center font-bold text-lg">
+                    <div class="w-10 h-10 rounded-xl bg-[#FDF6F0] text-[#E66A2C] border border-[#F5D3BC] flex items-center justify-center font-bold text-lg">
                         <i class="fa-solid fa-envelope-open-text"></i>
                     </div>
                     <div>
                         <div class="flex items-center space-x-2">
                             <h2 class="text-base font-bold text-slate-900">Today's Outreach Pipeline</h2>
-                            <span class="text-xs bg-[#FAF4F2] text-[#733E24] font-bold px-2.5 py-0.5 rounded-full border border-[#E4C3B5]">
+                            <span class="text-xs bg-[#FDF6F0] text-[#E66A2C] font-bold px-2.5 py-0.5 rounded-full border border-[#F5D3BC]">
                                 Pending Review: <span id="tab1-stat-drafts">0</span>
                             </span>
                         </div>
@@ -424,13 +424,13 @@
             <div class="bg-white rounded-xl border border-[#BBBDBC] overflow-hidden shadow-sm">
                 <div class="p-4.5 border-b border-[#BBBDBC] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                     <div class="flex items-center space-x-3">
-                        <div class="w-9 h-9 rounded-lg bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5] flex items-center justify-center font-bold text-base">
+                        <div class="w-9 h-9 rounded-lg bg-[#FDF6F0] text-[#E66A2C] border border-[#F5D3BC] flex items-center justify-center font-bold text-base">
                             <i class="fa-solid fa-users"></i>
                         </div>
                         <div>
                             <div class="flex items-center space-x-2">
                                 <h2 class="text-base font-bold text-slate-900">Contacts & Outreach History</h2>
-                                <span class="text-xs bg-[#FAF4F2] text-[#733E24] font-bold px-2 py-0.5 rounded-full border border-[#E4C3B5]">
+                                <span class="text-xs bg-[#FDF6F0] text-[#E66A2C] font-bold px-2 py-0.5 rounded-full border border-[#F5D3BC]">
                                     Sent: <span id="tab4-stat-sent">0</span>
                                 </span>
                             </div>
@@ -639,7 +639,7 @@
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-xs font-medium text-slate-700">Gemini API Key</label>
-                                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-blue-600 hover:underline">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[11px] text-[#245F73] hover:underline font-medium">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
                             </div>
                             <input type="password" id="prof-gemini-key" placeholder="Enter new key to update..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white" />
                             <p id="gemini-key-status" class="text-[10px] text-slate-400 mt-0.5"></p>
@@ -647,7 +647,7 @@
                         <div>
                             <div class="flex justify-between items-center mb-1">
                                 <label class="text-xs font-medium text-slate-700">Hunter.io API Key</label>
-                                <a href="https://hunter.io/users/sign_up" target="_blank" class="text-[11px] text-blue-600 hover:underline">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
+                                <a href="https://hunter.io/users/sign_up" target="_blank" class="text-[11px] text-[#245F73] hover:underline font-medium">Get Free Key <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i></a>
                             </div>
                             <input type="password" id="prof-hunter-key" placeholder="Enter new key to update..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white" />
                             <p id="hunter-key-status" class="text-[10px] text-slate-400 mt-0.5"></p>
@@ -765,7 +765,7 @@
                     if (progressBar) {
                         const pct = Math.min(100, Math.round((used / limit) * 100));
                         progressBar.style.width = `${pct}%`;
-                        progressBar.className = pct >= 100 ? 'bg-[#733E24] h-full transition-all duration-300' : 'bg-[#245F73] h-full transition-all duration-300';
+                        progressBar.className = pct >= 100 ? 'bg-[#E66A2C] h-full transition-all duration-300' : 'bg-[#245F73] h-full transition-all duration-300';
                     }
 
                     const monthlyText = document.getElementById('hunter-monthly-usage-text');
@@ -776,7 +776,7 @@
                         const left = Math.max(0, limit - used);
                         remainBadge.innerText = `${left} left today`;
                         remainBadge.className = left === 0 
-                            ? 'px-1.5 py-0.5 rounded bg-[#FAF4F2] text-[#733E24] font-semibold text-[10px] border border-[#E4C3B5]'
+                            ? 'px-1.5 py-0.5 rounded bg-[#FDF6F0] text-[#E66A2C] font-semibold text-[10px] border border-[#F5D3BC]'
                             : 'px-1.5 py-0.5 rounded bg-[#F0F5F7] text-[#245F73] font-semibold text-[10px] border border-[#BAD0D8]';
                     }
 
@@ -905,12 +905,12 @@
             contacts.forEach((c, idx) => {
                 const isEmail = !!c.email || !!c.draft_email;
                 const channelBadge = isEmail 
-                    ? `<span class="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-solid fa-envelope mr-1"></i> Email</span>`
-                    : `<span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-brands fa-linkedin mr-1"></i> LinkedIn Note</span>`;
+                    ? `<span class="bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8] text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-solid fa-envelope mr-1"></i> Email</span>`
+                    : `<span class="bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8] text-[11px] font-semibold px-2 py-0.5 rounded-full"><i class="fa-brands fa-linkedin mr-1"></i> LinkedIn Note</span>`;
 
-                const classColor = c.classification === 'Hiring Manager' ? 'bg-purple-50 text-purple-700 border-purple-200' 
-                                 : c.classification === 'Advisory Mentor' ? 'bg-amber-50 text-amber-700 border-amber-200' 
-                                 : 'bg-orange-50 text-orange-700 border-orange-200';
+                const classColor = c.classification === 'Hiring Manager' 
+                    ? 'bg-[#FDF6F0] text-[#E66A2C] border-[#F5D3BC]' 
+                    : 'bg-[#F0F5F7] text-[#245F73] border-[#BAD0D8]';
 
                 const card = document.createElement('div');
                 card.className = "bg-white rounded-xl border border-[#BBBDBC] p-5 shadow-sm hover:shadow transition flex flex-col justify-between space-y-4";
@@ -922,7 +922,7 @@
                             <div class="flex-1 mr-3">
                                 <div class="flex items-center space-x-2">
                                     <input id="name-input-${idx}" type="text" value="${c.full_name}" class="font-bold text-slate-900 text-sm bg-transparent border-b border-dashed border-slate-300 hover:border-brand-500 focus:border-brand-500 focus:bg-white focus:outline-none px-1 py-0.5 rounded w-full transition" title="Click to edit recipient name" />
-                                    <a href="${c.linkedin_url}" target="_blank" class="text-slate-400 hover:text-blue-600 text-xs shrink-0" title="Open LinkedIn Profile"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                                    <a href="${c.linkedin_url}" target="_blank" class="text-slate-400 hover:text-[#245F73] text-xs shrink-0" title="Open LinkedIn Profile"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
                                 </div>
                                 <p class="text-xs text-slate-500 font-medium mt-0.5">${c.title} &bull; <span class="text-slate-700 font-semibold">${c.company_domain}</span></p>
                             </div>
@@ -1097,8 +1097,8 @@
             companies.forEach(c => {
                 const isTrack1 = (c.priority_tier === 1 || c.track === 'TRACK_1');
                 const trackBadge = isTrack1 
-                    ? `<span class="bg-purple-50 text-purple-700 font-bold px-2 py-0.5 rounded text-xs border border-purple-200"><i class="fa-solid fa-fire mr-1"></i>Track 1 (${c.applicant_count || '<80'} Apps)</span>`
-                    : `<span class="bg-blue-50 text-blue-700 font-semibold px-2 py-0.5 rounded text-xs border border-blue-200"><i class="fa-solid fa-star mr-1"></i>Track 2 (${c.strategic_score || 0} pts)</span>`;
+                    ? `<span class="bg-[#FDF6F0] text-[#E66A2C] font-bold px-2 py-0.5 rounded text-xs border border-[#F5D3BC]"><i class="fa-solid fa-fire mr-1"></i>Track 1 (${c.applicant_count || '<80'} Apps)</span>`
+                    : `<span class="bg-[#F0F5F7] text-[#245F73] font-semibold px-2 py-0.5 rounded text-xs border border-[#BAD0D8]"><i class="fa-solid fa-star mr-1"></i>Track 2 (${c.strategic_score || 0} pts)</span>`;
 
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition";
@@ -1107,7 +1107,7 @@
                     <td class="px-4 py-3">${c.company_name} <br/><span class="text-[11px] text-slate-400">${c.location || 'Los Angeles / Remote'}</span></td>
                     <td class="px-4 py-3">${trackBadge}</td>
                     <td class="px-4 py-3 text-xs text-slate-500">${c.tech_stack || 'N/A'}</td>
-                    <td class="px-4 py-3 text-xs">${c.job_source_url ? `<a href="${c.job_source_url}" target="_blank" class="text-blue-600 hover:underline">View Job <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>` : '—'}</td>
+                    <td class="px-4 py-3 text-xs">${c.job_source_url ? `<a href="${c.job_source_url}" target="_blank" class="text-[#245F73] hover:text-[#1C4A5A] hover:underline font-medium">View Job <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i></a>` : '—'}</td>
                     <td class="px-4 py-3 text-xs text-slate-400">${c.created_at || '—'}</td>
                 `;
                 tbody.appendChild(tr);
@@ -1122,24 +1122,25 @@
 
             contacts.forEach(c => {
                 const isSent = (c.outreach_status === 'SENT');
+                const isHM = (c.classification === 'Hiring Manager');
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition";
                 tr.innerHTML = `
                     <td class="px-4 py-3 font-semibold text-slate-800">${c.full_name} <br/><span class="text-xs text-slate-400 font-normal">${c.title}</span></td>
                     <td class="px-4 py-3">${c.company_domain}</td>
-                    <td class="px-4 py-3"><span class="bg-slate-100 text-slate-700 px-2 py-0.5 rounded text-xs font-medium">${c.classification || 'N/A'}</span></td>
-                    <td class="px-4 py-3 text-xs text-slate-600">${c.email ? `<i class="fa-regular fa-envelope text-blue-500 mr-1"></i> ${c.email}` : `<i class="fa-brands fa-linkedin text-indigo-500 mr-1"></i> LinkedIn`}</td>
+                    <td class="px-4 py-3"><span class="${isHM ? 'bg-[#FDF6F0] text-[#E66A2C] border border-[#F5D3BC]' : 'bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8]'} px-2 py-0.5 rounded text-xs font-medium">${c.classification || 'N/A'}</span></td>
+                    <td class="px-4 py-3 text-xs text-slate-600">${c.email ? `<i class="fa-regular fa-envelope text-[#245F73] mr-1"></i> ${c.email}` : `<i class="fa-brands fa-linkedin text-[#245F73] mr-1"></i> LinkedIn`}</td>
                     <td class="px-4 py-3 text-xs">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isSent ? 'bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8]' : 'bg-[#FAF4F2] text-[#733E24] border border-[#E4C3B5]'}">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${isSent ? 'bg-[#F0F5F7] text-[#245F73] border border-[#BAD0D8]' : 'bg-[#FDF6F0] text-[#E66A2C] border border-[#F5D3BC]'}">
                             ${c.outreach_status}
                         </span>
                     </td>
                     <td class="px-4 py-3 text-xs">
                         ${isSent ? `
-                        <button onclick="updateStatus('${c.linkedin_url}', 'DRAFTED')" class="text-xs text-slate-500 hover:text-amber-600 font-medium underline flex items-center space-x-1">
+                        <button onclick="updateStatus('${c.linkedin_url}', 'DRAFTED')" class="text-xs text-slate-500 hover:text-[#E66A2C] font-medium underline flex items-center space-x-1">
                             <i class="fa-solid fa-rotate-left"></i> <span>Undo Sent</span>
                         </button>` : `
-                        <button onclick="updateStatus('${c.linkedin_url}', 'SENT')" class="text-xs text-blue-600 hover:text-blue-800 font-medium underline flex items-center space-x-1">
+                        <button onclick="updateStatus('${c.linkedin_url}', 'SENT')" class="text-xs text-[#245F73] hover:text-[#1C4A5A] font-medium underline flex items-center space-x-1">
                             <i class="fa-solid fa-check"></i> <span>Mark Sent</span>
                         </button>`}
                     </td>
