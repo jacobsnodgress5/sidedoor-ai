@@ -64,6 +64,26 @@ def init_db():
                 conn.execute("ALTER TABLE profiles ADD COLUMN daily_hunter_limit INTEGER DEFAULT 2")
             except Exception:
                 pass
+        if "linkedin_search_keywords" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN linkedin_search_keywords TEXT")
+            except Exception:
+                pass
+        if "linkedin_geo_id" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN linkedin_geo_id TEXT DEFAULT '102448103'")
+            except Exception:
+                pass
+        if "linkedin_location_name" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN linkedin_location_name TEXT DEFAULT 'Los Angeles, CA'")
+            except Exception:
+                pass
+        if "linkedin_time_range" not in existing_prof_cols:
+            try:
+                conn.execute("ALTER TABLE profiles ADD COLUMN linkedin_time_range TEXT DEFAULT 'r86400'")
+            except Exception:
+                pass
         
         # Ensure scraped_jobs table exists
         conn.execute("""
@@ -529,6 +549,20 @@ def save_profile(data: Dict, profile_id: Optional[int] = None) -> Dict:
         if profile_id:
             existing = conn.execute("SELECT * FROM profiles WHERE id = ?", (profile_id,)).fetchone()
 
+        # Auto-derive search keywords from target_roles if not explicitly provided
+        search_kw = (data.get("linkedin_search_keywords") or "").strip()
+        if not search_kw and data.get("target_roles"):
+            roles = [r.strip() for r in data["target_roles"].split(",") if r.strip()]
+            search_kw = ", ".join([f"{r} entry level" for r in roles[:4]])
+
+        loc_name = (data.get("linkedin_location_name") or "").strip() or "Los Angeles, CA"
+        geo_id = (data.get("linkedin_geo_id") or "").strip() or "102448103"
+        time_range = (data.get("linkedin_time_range") or "").strip()
+        if time_range not in ["r86400", "r604800", "all", ""]:
+            time_range = "r86400"
+        if time_range == "all":
+            time_range = ""
+
         if existing:
             conn.execute("""
                 UPDATE profiles SET
@@ -553,6 +587,10 @@ def save_profile(data: Dict, profile_id: Optional[int] = None) -> Dict:
                     END,
                     sample_hiring_manager = :sample_hiring_manager,
                     sample_young_professional = :sample_young_professional,
+                    linkedin_search_keywords = :linkedin_search_keywords,
+                    linkedin_geo_id = :linkedin_geo_id,
+                    linkedin_location_name = :linkedin_location_name,
+                    linkedin_time_range = :linkedin_time_range,
                     is_configured = 1,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE id = :id;
@@ -573,6 +611,10 @@ def save_profile(data: Dict, profile_id: Optional[int] = None) -> Dict:
                 "hunter_api_key": data.get("hunter_api_key", "").strip(),
                 "sample_hiring_manager": data.get("sample_hiring_manager", "").strip(),
                 "sample_young_professional": data.get("sample_young_professional", "").strip(),
+                "linkedin_search_keywords": search_kw,
+                "linkedin_geo_id": geo_id,
+                "linkedin_location_name": loc_name,
+                "linkedin_time_range": time_range,
             })
             target_id = profile_id
         else:
@@ -583,12 +625,14 @@ def save_profile(data: Dict, profile_id: Optional[int] = None) -> Dict:
                     profile_name, is_active, full_name, email, linkedin_url, alma_mater, degree_major,
                     grad_year, bio_summary, skills, target_roles, target_locations,
                     gemini_api_key, hunter_api_key, sample_hiring_manager,
-                    sample_young_professional, is_configured, created_at, updated_at
+                    sample_young_professional, linkedin_search_keywords, linkedin_geo_id,
+                    linkedin_location_name, linkedin_time_range, is_configured, created_at, updated_at
                 ) VALUES (
                     :profile_name, 1, :full_name, :email, :linkedin_url, :alma_mater, :degree_major,
                     :grad_year, :bio_summary, :skills, :target_roles, :target_locations,
                     :gemini_api_key, :hunter_api_key, :sample_hiring_manager,
-                    :sample_young_professional, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+                    :sample_young_professional, :linkedin_search_keywords, :linkedin_geo_id,
+                    :linkedin_location_name, :linkedin_time_range, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
                 );
             """, {
                 "profile_name": prof_name,
@@ -606,6 +650,10 @@ def save_profile(data: Dict, profile_id: Optional[int] = None) -> Dict:
                 "hunter_api_key": data.get("hunter_api_key", "").strip(),
                 "sample_hiring_manager": data.get("sample_hiring_manager", "").strip(),
                 "sample_young_professional": data.get("sample_young_professional", "").strip(),
+                "linkedin_search_keywords": search_kw,
+                "linkedin_geo_id": geo_id,
+                "linkedin_location_name": loc_name,
+                "linkedin_time_range": time_range,
             })
             target_id = cursor.lastrowid
 

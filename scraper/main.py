@@ -28,8 +28,41 @@ except (ImportError, ModuleNotFoundError):
 
 def load_config():
     config_path = os.path.join(os.path.dirname(__file__), "config.yaml")
-    with open(config_path, "r") as f:
-        return yaml.safe_load(f)
+    cfg = {}
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+
+    try:
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
+        from src.db.db import get_active_profile
+        active_prof = get_active_profile()
+        if active_prof:
+            search_cfg = cfg.setdefault("search", {})
+            raw_kw = active_prof.get("linkedin_search_keywords")
+            if raw_kw:
+                kws = [k.strip() for k in raw_kw.replace("\n", ",").split(",") if k.strip()]
+                if kws:
+                    search_cfg["keywords"] = kws
+            elif active_prof.get("target_roles"):
+                roles = [r.strip() for r in active_prof["target_roles"].split(",") if r.strip()]
+                if roles:
+                    search_cfg["keywords"] = [f"{r} entry level" for r in roles[:4]]
+
+            if active_prof.get("linkedin_geo_id"):
+                search_cfg["geo_id"] = str(active_prof["linkedin_geo_id"]).strip()
+            if active_prof.get("linkedin_time_range") is not None:
+                search_cfg["time_range"] = str(active_prof["linkedin_time_range"]).strip()
+            if active_prof.get("linkedin_location_name"):
+                search_cfg["location_name"] = str(active_prof["linkedin_location_name"]).strip()
+
+            cfg["active_profile_name"] = active_prof.get("profile_name", "Default Campaign")
+    except Exception:
+        pass
+
+    return cfg
 
 def main():
     # Initialize floating desktop progress card overlay
@@ -47,7 +80,12 @@ def main():
     # 1. Load config
     try:
         config = load_config()
-        print("[System] Configuration loaded successfully.")
+        camp_name = config.get("active_profile_name", "Default")
+        kws = config.get("search", {}).get("keywords", [])
+        loc = config.get("search", {}).get("location_name", "Los Angeles, CA")
+        print(f"[System] Active Campaign: '{camp_name}'")
+        print(f"[System] Search Location: {loc}")
+        print(f"[System] Search Keywords: {kws}")
     except Exception as e:
         print(f"[ERROR] Failed to load configuration: {e}")
         if close_overlay: close_overlay()

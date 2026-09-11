@@ -67,6 +67,10 @@ CREATE TABLE IF NOT EXISTS profiles (
     sample_young_professional TEXT,
     sourcing_mode TEXT DEFAULT 'MANUAL',      -- 'MANUAL' (User decides) or 'AUTO' (AI prioritized)
     daily_hunter_limit INTEGER DEFAULT 2,     -- Max Hunter domain searches allowed per day
+    linkedin_search_keywords TEXT,            -- Custom or derived search queries (comma/line separated)
+    linkedin_geo_id TEXT DEFAULT '102448103', -- LinkedIn Geo ID (e.g. '102448103' for LA, or custom)
+    linkedin_location_name TEXT DEFAULT 'Los Angeles, CA', -- Display location name or 'Remote'
+    linkedin_time_range TEXT DEFAULT 'r86400', -- 'r86400' (past 24 hrs), 'r604800' (past week), or ''
     is_configured INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

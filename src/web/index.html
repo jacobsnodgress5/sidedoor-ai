@@ -235,7 +235,19 @@
                                     Scraped Today: <span id="tab2-stat-jobs">0</span>
                                 </span>
                             </div>
-                            <p class="text-xs text-slate-500 mt-0.5">Discover and select which companies to search contacts for via Hunter.io.</p>
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <p class="text-xs text-slate-500">Discover and select which companies to search contacts for via Hunter.io.</p>
+                                <span class="text-slate-300">|</span>
+                                <span class="inline-flex items-center space-x-1 text-[11px] text-[#245F73] font-medium bg-[#F0F5F7] px-2 py-0.5 rounded border border-[#BAD0D8]">
+                                    <i class="fa-solid fa-location-dot text-[10px]"></i>
+                                    <span id="tab2-search-loc">Los Angeles, CA</span>
+                                </span>
+                                <span class="inline-flex items-center space-x-1 text-[11px] text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                                    <i class="fa-solid fa-tags text-[10px]"></i>
+                                    <span id="tab2-search-kws" class="truncate max-w-xs">Data Science & ML</span>
+                                </span>
+                                <button onclick="openProfileModal(false)" class="text-[11px] text-[#245F73] hover:underline font-semibold ml-1">Edit Targeting</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -613,10 +625,42 @@
                             <p class="text-[10px] text-slate-400 mt-0.5">Used by company scoring engine for priority tiers.</p>
                         </div>
                     </div>
-                    <div>
+                    <div class="mb-3">
                         <label class="block text-xs font-medium text-slate-700 mb-1">Key Technical Skills & Tools (comma separated)</label>
                         <input type="text" id="prof-skills" placeholder="e.g. Python, SQL, PyTorch, Scikit-learn, PostgreSQL, Git, C++" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none" />
                         <p class="text-[10px] text-slate-400 mt-0.5">Used to match job descriptions and find shared technical overlap with prospects.</p>
+                    </div>
+
+                    <!-- LinkedIn Automated Search Targeting Sub-section -->
+                    <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                                <i class="fa-brands fa-linkedin text-[#0A66C2]"></i>
+                                <span>LinkedIn Job Search Targeting</span>
+                            </span>
+                            <span class="text-[10px] text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">Used by Scraper</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Search Keywords / Queries (comma separated)</label>
+                                <input type="text" id="prof-search-keywords" placeholder="e.g. software engineer entry level, backend developer" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white" />
+                                <p class="text-[10px] text-slate-400 mt-0.5">Leave blank to auto-derive from Target Job Titles.</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Search Location / Metro Area</label>
+                                <select id="prof-search-location" onchange="onSearchLocationPreset(this.value)" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg focus:ring-1 focus:ring-brand-500 focus:outline-none bg-white">
+                                    <option value="102448103|Los Angeles, CA">Los Angeles Metropolitan Area</option>
+                                    <option value="90000084|San Francisco Bay Area, CA">San Francisco Bay Area, CA</option>
+                                    <option value="102571732|New York City Metropolitan Area">New York City Metropolitan Area</option>
+                                    <option value="104116203|Seattle, WA">Seattle, Washington Area</option>
+                                    <option value="103644278|United States (Any/Remote)">United States (Nationwide / Remote)</option>
+                                    <option value="CUSTOM">Custom Location Name...</option>
+                                </select>
+                                <div id="prof-custom-loc-div" class="hidden mt-1.5">
+                                    <input type="text" id="prof-custom-loc-name" placeholder="City, State or Country" class="w-full text-xs p-2 border border-slate-300 rounded-lg bg-white" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1205,6 +1249,16 @@
                     label.innerText = "Select Profile";
                 }
 
+                // Update targeting preview badges on Tab 2
+                const locBadge = document.getElementById('tab2-search-loc');
+                const kwBadge = document.getElementById('tab2-search-kws');
+                if (locBadge) {
+                    locBadge.innerText = currentProfile.linkedin_location_name || currentProfile.target_locations || "Los Angeles, CA";
+                }
+                if (kwBadge) {
+                    kwBadge.innerText = currentProfile.linkedin_search_keywords || currentProfile.target_roles || "Search terms auto-derived";
+                }
+
                 if (!data.configured) {
                     openProfileModal(true, false);
                 }
@@ -1286,6 +1340,16 @@
             openProfileModal(false, false); // isFirstRun=false, isNew=false
         }
 
+        function onSearchLocationPreset(val) {
+            const customDiv = document.getElementById('prof-custom-loc-div');
+            if (val === 'CUSTOM') {
+                customDiv.classList.remove('hidden');
+                document.getElementById('prof-custom-loc-name').focus();
+            } else {
+                customDiv.classList.add('hidden');
+            }
+        }
+
         function openProfileModal(isFirstRun = false, isNew = false) {
             const modal = document.getElementById('profile-modal');
             const banner = document.getElementById('onboarding-banner');
@@ -1329,6 +1393,10 @@
                 document.getElementById('prof-target-locations').value = "";
                 document.getElementById('prof-sample-hm').value = "";
                 document.getElementById('prof-sample-yp').value = "";
+                document.getElementById('prof-search-keywords').value = "";
+                document.getElementById('prof-search-location').value = "102448103|Los Angeles, CA";
+                document.getElementById('prof-custom-loc-div').classList.add('hidden');
+                document.getElementById('prof-custom-loc-name').value = "";
                 document.getElementById('prof-gemini-key').value = "";
                 document.getElementById('prof-hunter-key').value = "";
                 document.getElementById('gemini-key-status').innerText = "Uses existing key unless changed.";
@@ -1348,6 +1416,28 @@
                 document.getElementById('prof-target-locations').value = currentProfile.target_locations || "";
                 document.getElementById('prof-sample-hm').value = currentProfile.sample_hiring_manager || "";
                 document.getElementById('prof-sample-yp').value = currentProfile.sample_young_professional || "";
+
+                // Populate LinkedIn search parameters
+                document.getElementById('prof-search-keywords').value = currentProfile.linkedin_search_keywords || "";
+                const curGeo = currentProfile.linkedin_geo_id || "102448103";
+                const curLocName = currentProfile.linkedin_location_name || "Los Angeles, CA";
+                const locSelect = document.getElementById('prof-search-location');
+                let foundMatch = false;
+                for (let i = 0; i < locSelect.options.length; i++) {
+                    if (locSelect.options[i].value.startsWith(curGeo + "|")) {
+                        locSelect.selectedIndex = i;
+                        foundMatch = true;
+                        break;
+                    }
+                }
+                if (!foundMatch) {
+                    locSelect.value = "CUSTOM";
+                    document.getElementById('prof-custom-loc-div').classList.remove('hidden');
+                    document.getElementById('prof-custom-loc-name').value = curLocName;
+                } else {
+                    document.getElementById('prof-custom-loc-div').classList.add('hidden');
+                    document.getElementById('prof-custom-loc-name').value = "";
+                }
 
                 const gStat = document.getElementById('gemini-key-status');
                 if (currentProfile.has_gemini_key) {
@@ -1469,6 +1559,18 @@
                 return;
             }
 
+            const locVal = document.getElementById('prof-search-location').value;
+            let geoId = "102448103";
+            let locName = "Los Angeles, CA";
+            if (locVal === "CUSTOM") {
+                locName = document.getElementById('prof-custom-loc-name').value.trim() || "United States";
+                geoId = "103644278"; // US default fallback for custom text
+            } else if (locVal && locVal.includes("|")) {
+                const parts = locVal.split("|");
+                geoId = parts[0];
+                locName = parts[1];
+            }
+
             const profIdVal = document.getElementById('prof-id').value;
             const payload = {
                 id: profIdVal ? parseInt(profIdVal, 10) : null,
@@ -1483,6 +1585,9 @@
                 skills: document.getElementById('prof-skills').value.trim(),
                 target_roles: document.getElementById('prof-target-roles').value.trim(),
                 target_locations: document.getElementById('prof-target-locations').value.trim(),
+                linkedin_search_keywords: document.getElementById('prof-search-keywords').value.trim(),
+                linkedin_geo_id: geoId,
+                linkedin_location_name: locName,
                 gemini_api_key: document.getElementById('prof-gemini-key').value.trim(),
                 hunter_api_key: document.getElementById('prof-hunter-key').value.trim(),
                 sample_hiring_manager: document.getElementById('prof-sample-hm').value.trim(),
