@@ -1,7 +1,7 @@
 # SideDoor AI
-> **Skip the ATS line. Autonomous, Local-First AI Career Networking Agent**
+> **Spamming job applications isn't the only option. Local-First AI Career Networking Agent**
 
-SideDoor AI transforms cold job applications into a high-conversion networking system. It identifies high-fit companies, sources verified corporate contacts via Hunter.io, and drafts personalized, outreach messages written in your  voice.
+SideDoor AI is built to help you streamline cold networking so you can focus on connecting with people who can help you find your next job.
 
 100% free to self-host, local-first, and zero code required to configure.
 
